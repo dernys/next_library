@@ -455,6 +455,20 @@ const translations: Translations = {
     "app.visualizeLibraryData": "Ver datos de la biblioteca",
     "app.noDataAvailable": "No hay datos disponibles",
     "app.createBackupDescription": "Crear una copia de seguridad de la base de datos",
+    "app.registrationSuccess":"Registro exitoso",
+    "app.registrationFailed":"Error al registrar",
+    "app.confirmLoanRequest":"Confirmar Préstamo",
+    "app.confirmLoanRequestDescription":"Confirmar Préstamo",
+    "app.confirmRequest":"Confirmar",
+    "app.loanRequestSuccess":"Préstamo confirmado exitosamente",
+    "app.loanRequestFailed":"Error al confirmar préstamo",
+    "app.userProfile":"Perfil de usuario",
+    "app.loanHistory":"Historial de préstamos",
+    "app.updateProfile":"Actualizar perfil",
+    "app.changePassword":"Cambiar contraseña",
+    "app.currentPassword":"Contraseña actual",
+    "app.newPassword":"Nueva contraseña",
+    "app.selectType":"Seleccionar tipo de material"
 
     
   },
@@ -735,6 +749,24 @@ const translations: Translations = {
     "app.visualizeLibraryData": "Visualize library data",
     "app.noDataAvailable": "No data available",
     "app.createBackupDescription": "Create a backup of the database",
+    
+    "app.registrationFailed":"Registration Failed",
+    "app.registrationSuccess":"Registration Success",
+    "app.confirmLoanRequest":"Confirm Loan Request",
+    "app.confirmLoanRequestDescription":"Confirm Loan Request",
+    "app.confirmRequest":"Confirm Request",
+    "app.loanRequestSuccess":"Loan request confirmed successfully",
+    "app.loanRequestFailed":"Error confirming loan request",
+    "app.userProfile":"User Profile",
+    "app.loanHistory":"Loan History",
+    "app.updateProfile":"Update Profile",
+    "app.changePassword":"Change Password",
+    "app.currentPassword":"Current password",
+    "app.newPassword":"New password",
+    "app.selectType":"Select material type"
+
+
+
     
   },
 }
