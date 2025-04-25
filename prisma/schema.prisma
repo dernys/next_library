@@ -1,0 +1,172 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  users       User[]
+}
+
+model User {
+  id                String   @id @default(cuid())
+  name              String
+  lastName          String?
+  email             String   @unique
+  password          String?
+  phone             String?
+  identityCard      String?
+  address           String?
+  roleId            String
+  role              Role     @relation(fields: [roleId], references: [id])
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  loans             Loan[]
+}
+
+model Category {
+  id          String     @id @default(cuid())
+  name        String     @unique
+  description String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  materials   Material[]
+}
+
+model Collection {
+  id          String     @id @default(cuid())
+  name        String     @unique
+  description String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  materials   Material[]
+}
+
+model MaterialType {
+  id          String     @id @default(cuid())
+  name        String     @unique
+  description String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  materials   Material[]
+}
+
+model Subject {
+  id          String              @id @default(cuid())
+  name        String              @unique
+  description String?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  materials   MaterialToSubject[]
+}
+
+model MaterialToSubject {
+  materialId String
+  subjectId  String
+  material   Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  subject    Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@id([materialId, subjectId])
+}
+
+model Material {
+  id                 String              @id @default(cuid())
+  title              String
+  subtitle           String?
+  author             String
+  isbn               String?             @unique
+  description        String?
+  quantity           Int                 @default(1)
+  editionInfo        String?
+  isOpac             Boolean             @default(false)
+  categoryId         String
+  category           Category            @relation(fields: [categoryId], references: [id])
+  materialTypeId     String?
+  materialType       MaterialType?       @relation(fields: [materialTypeId], references: [id])
+  collectionId       String?
+  collection         Collection?         @relation(fields: [collectionId], references: [id])
+  language           String?
+  publisher          String?
+  country            String?
+  publicationPlace   String?
+  price              Float?
+  dimensions         String?
+  pages              Int?
+  registrationNumber String?
+  opac               String?
+  entry1             String?
+  entry2             String?
+  entry3             String?
+  coverImage         String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  loans              Loan[]
+  copies             Copy[]
+  subjects           MaterialToSubject[]
+}
+
+model Copy {
+  id                 String    @id @default(cuid())
+  registrationNumber String    @unique
+  status             String    @default("available") // available, loaned, reserved, damaged
+  materialId         String
+  material           Material  @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  acquisitionDate    DateTime  @default(now())
+  notes              String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  loans              Loan[]
+}
+
+model Loan {
+  id         String    @id @default(cuid())
+  userId     String?
+  user       User?     @relation(fields: [userId], references: [id])
+  guestName  String?
+  guestEmail String?
+  guestPhone String?
+  guestId    String?
+  guestAddress String?
+  materialId String
+  material   Material  @relation(fields: [materialId], references: [id])
+  copyId     String?
+  copy       Copy?     @relation(fields: [copyId], references: [id])
+  loanDate   DateTime  @default(now())
+  dueDate    DateTime
+  returnDate DateTime?
+  status     String    @default("requested") // requested, active, returned, overdue, rejected
+  notes      String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+model Backup {
+  id          String   @id @default(cuid())
+  filename    String
+  description String?
+  size        Int
+  path        String
+  createdAt   DateTime @default(now())
+  createdBy   String?
+}
+
+model LibraryInfo {
+  id           String   @id @default(cuid())
+  name         String
+  description  String?
+  address      String?
+  phone        String?
+  email        String?
+  website      String?
+  openingHours String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
