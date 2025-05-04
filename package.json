@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "import:materials": "tsx scripts/import-materials.ts"
   },
   "dependencies": {
     "@auth/core": "latest",
@@ -56,6 +57,7 @@
     "fs": "^0.0.1-security",
     "input-otp": "1.4.1",
     "lucide-react": "^0.454.0",
+    "mysql2": "^3.14.1",
     "next": "15.2.4",
     "next-auth": "latest",
     "next-themes": "latest",

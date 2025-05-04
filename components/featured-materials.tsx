@@ -91,7 +91,7 @@ export function FeaturedMaterials() {
                 </CardHeader>
                 <CardContent className="p-4 pt-0">
                   <p className="text-sm text-muted-foreground mb-2">{material.author}</p>
-                  <p className="text-xs bg-secondary inline-block px-2 py-1 rounded-full">{material.category.name}</p>
+                  <p className="text-xs bg-secondary inline-block px-2 py-1 rounded-full">{material.category?.name}</p>
                 </CardContent>
                 <CardFooter className="p-4 pt-0">
                   <Button asChild className="w-full hover:bg-primary/90 transition-colors">

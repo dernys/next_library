@@ -26,11 +26,6 @@ import { useToast } from "@/hooks/use-toast"
 import { Book, Plus, Minus, Upload, RefreshCw, Copy, Tag, Search, BookPlus, Loader2 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 
-type Category = {
-  id: string
-  name: string
-}
-
 type MaterialType = {
   id: string
   name: string
@@ -63,6 +58,7 @@ type OpenLibraryBook = {
 }
 
 type MaterialFormData = {
+  id: string
   title: string
   subtitle: string
   author: string
@@ -71,7 +67,6 @@ type MaterialFormData = {
   quantity: number
   editionInfo: string
   isOpac: boolean
-  categoryId: string
   materialTypeId: string
   collectionId: string
   language: string
@@ -94,7 +89,6 @@ type MaterialFormDialogProps = {
   onSubmit: (e: React.FormEvent) => Promise<void>
   formData: MaterialFormData
   setFormData: React.Dispatch<React.SetStateAction<MaterialFormData>>
-  categories: Category[]
   materialTypes: MaterialType[]
   collections: Collection[]
   subjects: Subject[]
@@ -114,7 +108,6 @@ export function MaterialFormDialog({
   onSubmit,
   formData,
   setFormData,
-  categories,
   materialTypes,
   collections,
   subjects,
@@ -605,7 +598,7 @@ export function MaterialFormDialog({
                               <Input
                                 value={copy.registrationNumber}
                                 onChange={(e) => handleCopyChange(index, "registrationNumber", e.target.value)}
-                                readOnly
+                                
                               />
                             </div>
                             <div className="flex-1 space-y-2">
@@ -644,64 +637,50 @@ export function MaterialFormDialog({
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
                         <h3 className="text-lg font-medium">{t("app.subjects")}</h3>
-                        <Popover open={isSubjectPopoverOpen} onOpenChange={setIsSubjectPopoverOpen}>
-                          <PopoverTrigger asChild>
-                            <Button type="button" className="hover:bg-primary/90 transition-colors">
-                              <Plus className="mr-2 h-4 w-4" />
-                              {t("app.addSubject")}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-[300px] p-0" align="end">
-                            <Command>
-                              <CommandInput
-                                placeholder={t("app.searchSubjects")}
-                                value={subjectSearchQuery}
-                                onValueChange={setSubjectSearchQuery}
-                              />
-                              <CommandList>
-                                <CommandEmpty>{t("app.noSubjectsFound")}</CommandEmpty>
-                                <CommandGroup>
-                                  {subjects
-                                    .filter(
-                                      (subject) =>
-                                        !selectedSubjects.find((s) => s.id === subject.id) &&
-                                        subject.name.toLowerCase().includes(subjectSearchQuery.toLowerCase()),
-                                    )
-                                    .map((subject) => (
-                                      <CommandItem
-                                        key={subject.id}
-                                        onSelect={() => handleAddSubject(subject)}
-                                        className="cursor-pointer"
-                                      >
-                                        <Tag className="mr-2 h-4 w-4" />
-                                        {subject.name}
-                                      </CommandItem>
-                                    ))}
-                                </CommandGroup>
-                              </CommandList>
-                            </Command>
-                          </PopoverContent>
-                        </Popover>
+                        <Button
+                          type="button"
+                          onClick={() =>
+                            setSelectedSubjects([
+                              ...selectedSubjects,
+                              { id: crypto.randomUUID(), name: "" },
+                            ])
+                          }
+                          className="hover:bg-primary/90 transition-colors"
+                        >
+                          <Plus className="mr-2 h-4 w-4" />
+                          {t("app.addSubject")}
+                        </Button>
                       </div>
 
                       <div className="space-y-4">
-                        {selectedSubjects.map((subject) => (
+                        {selectedSubjects.map((subject, index) => (
                           <motion.div
                             key={subject.id}
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -20 }}
-                            className="flex items-center justify-between rounded-lg border p-4"
+                            className="flex items-center gap-4 rounded-lg border p-4"
                           >
-                            <div className="flex items-center gap-2">
-                              <Tag className="h-4 w-4" />
-                              <span>{subject.name}</span>
+                            <div className="flex-1 space-y-2">
+                              <Label>{t("app.subjectName")}</Label>
+                              <Input
+                                value={subject.name}
+                                onChange={(e) => {
+                                  const updatedSubjects = [...selectedSubjects]
+                                  updatedSubjects[index].name = e.target.value
+                                  setSelectedSubjects(updatedSubjects)
+                                  console.log("Updated subjects:", updatedSubjects)
+                                }}
+                                placeholder={t("app.subjectNamePlaceholder")}
+                              />
                             </div>
                             <Button
                               type="button"
                               variant="ghost"
                               size="icon"
-                              onClick={() => handleRemoveSubject(subject.id)}
+                              onClick={() =>
+                                setSelectedSubjects(selectedSubjects.filter((_, i) => i !== index))
+                              }
                               className="hover:bg-destructive/20 transition-colors"
                             >
                               <Minus className="h-4 w-4" />
@@ -714,7 +693,9 @@ export function MaterialFormDialog({
                           <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center">
                             <Tag className="h-12 w-12 text-muted-foreground mb-4" />
                             <p className="text-lg font-medium">{t("app.noSubjects")}</p>
-                            <p className="text-sm text-muted-foreground">{t("app.addSubjectsDescription")}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {t("app.addSubjectsDescription")}
+                            </p>
                           </div>
                         )}
                       </div>

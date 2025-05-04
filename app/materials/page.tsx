@@ -168,7 +168,7 @@ export default function MaterialsPage() {
                       <TableCell className="font-medium">{material.title}</TableCell>
                       <TableCell>{material.author}</TableCell>
                       <TableCell>
-                        <span className="rounded-full bg-secondary px-2 py-1 text-xs">{material.category.name}</span>
+                        <span className="rounded-full bg-secondary px-2 py-1 text-xs">{material.category?.name}</span>
                       </TableCell>
                       <TableCell>
                         {material.materialType ? (

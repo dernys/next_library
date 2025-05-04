@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useToast } from "@/hooks/use-toast"
-import { useFetchCategories } from "@/hooks/use-fetch-categories"
+// import { useFetchCategories } from "@/hooks/use-fetch-categories"
 import { BookPlus, Edit, Trash, FileUp, FileDown, Search } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { MaterialFormDialog } from "@/components/material-form-dialog"
@@ -21,6 +21,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { motion } from "framer-motion"
+import { Pagination } from "@/components/pagination"
 
 type Material = {
   id: string
@@ -88,6 +89,7 @@ type Subject = {
 }
 
 const defaultFormData = {
+  id: "",
   title: "",
   subtitle: "",
   author: "",
@@ -96,7 +98,7 @@ const defaultFormData = {
   quantity: 1,
   editionInfo: "",
   isOpac: false,
-  categoryId: "",
+  // categoryId: "",
   materialTypeId: "",
   collectionId: "",
   language: "",
@@ -113,13 +115,13 @@ const defaultFormData = {
 export default function ManageMaterialsPage() {
   const { t } = useLanguage()
   const { toast } = useToast()
-  const { categories, isLoading: categoriesLoading } = useFetchCategories()
+  // const { categories, isLoading: categoriesLoading } = useFetchCategories()
 
   const [materials, setMaterials] = useState<Material[]>([])
   const [collections, setCollections] = useState<Collection[]>([])
   const [materialTypes, setMaterialTypes] = useState<MaterialType[]>([])
   const [subjects, setSubjects] = useState<Subject[]>([])
-  const [selectedSubjects, setSelectedSubjects] = useState<Subject[]>([])
+  const [selectedSubjects, setSelectedSubjects] = useState<{ id: string; name: string }[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
@@ -145,6 +147,7 @@ export default function ManageMaterialsPage() {
   useEffect(() => {
     if (selectedMaterial && isEditDialogOpen) {
       setFormData({
+        id: selectedMaterial.id,
         title: selectedMaterial.title,
         subtitle: selectedMaterial.subtitle || "",
         author: selectedMaterial.author,
@@ -153,7 +156,7 @@ export default function ManageMaterialsPage() {
         quantity: selectedMaterial.quantity,
         editionInfo: selectedMaterial.editionInfo || "",
         isOpac: selectedMaterial.isOpac,
-        categoryId: selectedMaterial.categoryId,
+        // categoryId: selectedMaterial.categoryId,
         materialTypeId: selectedMaterial.materialTypeId || "",
         collectionId: selectedMaterial.collectionId || "",
         language: selectedMaterial.language || "",
@@ -267,7 +270,7 @@ export default function ManageMaterialsPage() {
       const materialData = {
         ...formData,
         copies: copies,
-        subjects: selectedSubjects.map((s) => s.id),
+        subjects: selectedSubjects,
       }
 
       const response = await fetch("/api/materials", {
@@ -312,7 +315,7 @@ export default function ManageMaterialsPage() {
       const materialData = {
         ...formData,
         copies: copies,
-        subjects: selectedSubjects.map((s) => s.id),
+        subjects: selectedSubjects,
       }
 
       const response = await fetch(`/api/materials/${selectedMaterial.id}`, {
@@ -525,7 +528,7 @@ export default function ManageMaterialsPage() {
                   <TableRow>
                     <TableHead>{t("app.title")}</TableHead>
                     <TableHead>{t("app.author")}</TableHead>
-                    <TableHead>{t("app.category")}</TableHead>
+                    <TableHead>{t("app.collection")}</TableHead>
                     <TableHead>{t("app.type")}</TableHead>
                     <TableHead className="text-center">{t("app.copies")}</TableHead>
                     <TableHead className="text-right">{t("app.actions")}</TableHead>
@@ -561,7 +564,7 @@ export default function ManageMaterialsPage() {
                         </TableCell>
                         <TableCell>{material.author}</TableCell>
                         <TableCell>
-                          <span className="rounded-full bg-secondary px-2 py-1 text-xs">{material.category.name}</span>
+                          <span className="rounded-full bg-secondary px-2 py-1 text-xs">{material.collection?.name}</span>
                         </TableCell>
                         <TableCell>
                           {material.materialType ? (
@@ -621,41 +624,7 @@ export default function ManageMaterialsPage() {
         </Card>
       </motion.div>
 
-      {totalPages > 1 && (
-        <div className="flex justify-center mt-4">
-          <div className="flex space-x-2">
-            <Button
-              variant="outline"
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-              className="hover:bg-primary/10 transition-colors"
-            >
-              {t("app.previous")}
-            </Button>
-            <div className="flex items-center space-x-1">
-              {Array.from({ length: totalPages }).map((_, i) => (
-                <Button
-                  key={i}
-                  variant={currentPage === i + 1 ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setCurrentPage(i + 1)}
-                  className={currentPage === i + 1 ? "" : "hover:bg-primary/10 transition-colors"}
-                >
-                  {i + 1}
-                </Button>
-              ))}
-            </div>
-            <Button
-              variant="outline"
-              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
-              className="hover:bg-primary/10 transition-colors"
-            >
-              {t("app.next")}
-            </Button>
-          </div>
-        </div>
-      )}
+      <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
 
       {/* Material Form Dialog for Add */}
       <MaterialFormDialog
@@ -666,7 +635,7 @@ export default function ManageMaterialsPage() {
         onSubmit={handleAddMaterial}
         formData={formData}
         setFormData={setFormData}
-        categories={categories}
+        // categories={categories}
         materialTypes={materialTypes}
         collections={collections}
         subjects={subjects}
@@ -687,7 +656,7 @@ export default function ManageMaterialsPage() {
         onSubmit={handleEditMaterial}
         formData={formData}
         setFormData={setFormData}
-        categories={categories}
+        // categories={categories}
         materialTypes={materialTypes}
         collections={collections}
         subjects={subjects}
