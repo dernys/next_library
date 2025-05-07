@@ -8,7 +8,7 @@ const prisma = new PrismaClient()
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const query = searchParams.get("query") || ""
-  const category = searchParams.get("category") || ""
+  const collection = searchParams.get("collection") || ""
   const page = Number.parseInt(searchParams.get("page") || "1")
   const limit = Number.parseInt(searchParams.get("limit") || "10")
   const skip = (page - 1) * limit
@@ -20,14 +20,13 @@ export async function GET(request: Request) {
         { author: { contains: query, mode: "insensitive" } },
         { subtitle: { contains: query, mode: "insensitive" } },
       ],
-      ...(category ? { categoryId: category } : {}),
+      ...(collection ? { collectionId: collection } : {}),
     }
 
     const [materials, total] = await Promise.all([
       prisma.material.findMany({
         where,
         include: {
-          category: true,
           materialType: true,
           collection: true,
           copies: true,
@@ -64,7 +63,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions)
 
-  if (!session || session.user.role !== "librarian") {
+  if (!session || session.user?.role !== "librarian") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
@@ -79,7 +78,6 @@ export async function POST(request: Request) {
       quantity,
       editionInfo,
       isOpac,
-      categoryId,
       materialTypeId,
       collectionId,
       language,
@@ -99,6 +97,21 @@ export async function POST(request: Request) {
       subjects,
     } = body
 
+    // Validar que el número de registro es único entre materiales y copias
+    if (registrationNumber) {
+      // Verifica en materiales
+      const existingMaterial = await prisma.material.findFirst({
+        where: { registrationNumber },
+      })
+      // Verifica en copias
+      const existingCopy = await prisma.copy.findFirst({
+        where: { registrationNumber },
+      })
+      if (existingMaterial || existingCopy) {
+        return NextResponse.json({ error: "El número de registro ya existe en otro material o copia." }, { status: 400 })
+      }
+    }
+
     // Crear el material
     const material = await prisma.material.create({
       data: {
@@ -110,7 +123,6 @@ export async function POST(request: Request) {
         quantity,
         editionInfo,
         isOpac: isOpac || false,
-        categoryId,
         materialTypeId: materialTypeId || null,
         collectionId: collectionId || null,
         language,
@@ -129,33 +141,58 @@ export async function POST(request: Request) {
       },
     })
 
-    // Crear las copias
-    if (copies && Array.isArray(copies) && copies.length > 0) {
-      await Promise.all(
-        copies.map(async (copy: { registrationNumber: string; notes: string }) => {
-          await prisma.copy.create({
-            data: {
-              registrationNumber: copy.registrationNumber,
-              notes: copy.notes,
-              materialId: material.id,
-              status: "available",
-            },
-          })
-        }),
-      )
+    // Crear las copias: deben coincidir en cantidad con quantity
+    if (copies && Array.isArray(copies)) {
+      if (copies.length !== quantity) {
+        return NextResponse.json({ error: "La cantidad de copias debe coincidir con la cantidad indicada." }, { status: 400 })
+      }
+      for (const copy of copies) {
+        // Validar que registrationNumber de la copia sea único en materiales y copias
+        const copyExistsInMaterial = await prisma.material.findFirst({ where: { registrationNumber: copy.registrationNumber } })
+        const copyExistsInCopy = await prisma.copy.findFirst({ where: { registrationNumber: copy.registrationNumber } })
+        if (copyExistsInMaterial || copyExistsInCopy) {
+          return NextResponse.json({ error: `El número de registro ${copy.registrationNumber} ya existe en otro material o copia.` }, { status: 400 })
+        }
+        await prisma.copy.create({
+          data: {
+            registrationNumber: copy.registrationNumber,
+            notes: copy.notes,
+            materialId: material.id,
+            status: "available",
+          },
+        })
+      }
+    } else if (quantity > 0) {
+      return NextResponse.json({ error: "Debe ingresar los datos de las copias." }, { status: 400 })
     }
 
     // Asociar materias
-    if (subjects && Array.isArray(subjects) && subjects.length > 0) {
+    if (subjects && Array.isArray(subjects)) {
       await Promise.all(
-        subjects.map(async (subjectId: string) => {
+        subjects.map(async (subject: { id: string; name: string }) => {
+          let subjectId = subject.id
+
+          // Verificar si el subject existe
+          const existingSubject = await prisma.subject.findUnique({
+            where: { id: subjectId },
+          })
+
+          // Si no existe, crearlo
+          if (!existingSubject) {
+            const newSubject = await prisma.subject.create({
+              data: { id: subject.id, name: subject.name },
+            })
+            subjectId = newSubject.id
+          }
+
+          // Vincular el subject al material
           await prisma.materialToSubject.create({
             data: {
               materialId: material.id,
               subjectId,
             },
           })
-        }),
+        })
       )
     }
 

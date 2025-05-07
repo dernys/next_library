@@ -24,11 +24,19 @@ import { CalendarIcon, Search } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 
+type MaterialCopy = {
+  id: string
+  registrationNumber: string
+  status: string
+  notes: string | null
+}
+
 type Material = {
   id: string
   title: string
   author: string
   quantity: number
+  copies: MaterialCopy[]
 }
 
 type User = {
@@ -53,6 +61,8 @@ export default function ManageLoansPage() {
   const [dueDate, setDueDate] = useState<Date | undefined>(
     new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days from now
   )
+  const [selectedCopy, setSelectedCopy] = useState<MaterialCopy | null>(null)
+  const [isCopyDialogOpen, setIsCopyDialogOpen] = useState(false)
 
   useEffect(() => {
     fetchMaterials()
@@ -147,6 +157,16 @@ export default function ManageLoansPage() {
     }
   }
 
+  const handleSelectMaterial = (material: Material) => {
+    setSelectedMaterial(material)
+    setIsCopyDialogOpen(true)
+  }
+
+  const handleSelectCopy = (copy: MaterialCopy) => {
+    setSelectedCopy(copy)
+    setIsCopyDialogOpen(false)
+  }
+
   return (
     <div className="container py-8">
       <h1 className="mb-6 text-3xl font-bold">{t("app.createLoan")}</h1>
@@ -183,7 +203,7 @@ export default function ManageLoansPage() {
                     className={`p-3 rounded-lg border cursor-pointer transition-colors ${
                       selectedMaterial?.id === material.id ? "bg-primary text-primary-foreground" : "hover:bg-muted"
                     } ${material.quantity === 0 ? "opacity-50 cursor-not-allowed" : ""}`}
-                    onClick={() => material.quantity > 0 && setSelectedMaterial(material)}
+                    onClick={() => material.quantity > 0 && handleSelectMaterial(material)}
                   >
                     <div className="font-medium">{material.title}</div>
                     <div className="text-sm">{material.author}</div>
@@ -309,6 +329,33 @@ export default function ManageLoansPage() {
               {t("app.cancel")}
             </Button>
             <Button onClick={handleCreateLoan}>{t("app.confirm")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isCopyDialogOpen} onOpenChange={setIsCopyDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("app.selectCopy")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 max-h-[300px] overflow-y-auto">
+            {selectedMaterial?.copies.map((copy) => (
+              <div
+                key={copy.id}
+                className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                  selectedCopy?.id === copy.id ? "bg-primary text-primary-foreground" : "hover:bg-muted"
+                }`}
+                onClick={() => handleSelectCopy(copy)}
+              >
+                <div className="font-medium">{t("app.registrationNumber")}: {copy.registrationNumber}</div>
+                <div className="text-sm">{t("app.notes")}: {copy.notes || t("app.noNotes")}</div>
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCopyDialogOpen(false)}>
+              {t("app.cancel")}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

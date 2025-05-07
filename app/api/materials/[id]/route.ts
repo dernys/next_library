@@ -5,7 +5,8 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 
 const prisma = new PrismaClient()
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, context: { params: { id: string } }) {
+  const { params } = context
   const { id } = params
 
   try {
@@ -35,12 +36,17 @@ export async function GET(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, context: { params: { id: string } }) {
   const session = await getServerSession(authOptions)
-  const { id } = params
+  const { params } = context
+  const id = await params?.id
 
-  if (!session || session.user.role !== "librarian") {
+  if (!session || (session.user && (session.user as any).role !== "librarian")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  if (!id) {
+    return NextResponse.json({ error: "Material ID is required" }, { status: 400 })
   }
 
   try {
@@ -54,7 +60,6 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       quantity,
       editionInfo,
       isOpac,
-      categoryId,
       materialTypeId,
       collectionId,
       language,
@@ -74,6 +79,19 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       subjects,
     } = body
 
+    // Validar que el número de registro es único entre materiales (excepto el propio)
+    if (registrationNumber) {
+      const existingMaterial = await prisma.material.findFirst({
+        where: {
+          registrationNumber,
+          NOT: { id },
+        },
+      })
+      if (existingMaterial) {
+        return NextResponse.json({ error: "El número de registro ya existe para otro material." }, { status: 400 })
+      }
+    }
+
     // Actualizar el material
     const material = await prisma.material.update({
       where: { id },
@@ -86,7 +104,6 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         quantity,
         editionInfo,
         isOpac: isOpac || false,
-        categoryId,
         materialTypeId: materialTypeId || null,
         collectionId: collectionId || null,
         language,
@@ -105,73 +122,84 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       },
     })
 
-    // Actualizar las copias
-    // Primero, obtener las copias existentes
-    const existingCopies = await prisma.copy.findMany({
-      where: { materialId: id },
-    })
+    // Copias: deben coincidir con quantity
+    if (!copies || !Array.isArray(copies) || copies.length !== quantity) {
+      return NextResponse.json({ error: "La cantidad de copias debe coincidir con la cantidad indicada." }, { status: 400 })
+    }
 
-    // Crear un mapa de las copias existentes por número de registro
+    // Validar unicidad de registrationNumber de copias
+    for (const copy of copies) {
+      const existingCopy = await prisma.copy.findFirst({
+        where: {
+          registrationNumber: copy.registrationNumber,
+          NOT: { materialId: id },
+        },
+      })
+      if (existingCopy) {
+        return NextResponse.json({ error: `El número de registro de copia ${copy.registrationNumber} ya existe.` }, { status: 400 })
+      }
+    }
+
+    // Obtener copias existentes
+    const existingCopies = await prisma.copy.findMany({ where: { materialId: id } })
     const existingCopiesMap = new Map(existingCopies.map((copy) => [copy.registrationNumber, copy]))
+    const newRegistrationNumbers = new Set(copies.map((copy: { registrationNumber: string }) => copy.registrationNumber))
 
-    // Crear un conjunto de números de registro de las copias nuevas
-    const newRegistrationNumbers = new Set(
-      copies?.map((copy: { registrationNumber: string }) => copy.registrationNumber) || [],
-    )
-
-    // Eliminar las copias que ya no existen
+    // Eliminar copias que ya no existen
     for (const existingCopy of existingCopies) {
       if (!newRegistrationNumbers.has(existingCopy.registrationNumber)) {
-        await prisma.copy.delete({
+        await prisma.copy.delete({ where: { id: existingCopy.id } })
+      }
+    }
+
+    // Crear o actualizar copias para igualar la cantidad
+    for (const copy of copies) {
+      const existingCopy = existingCopiesMap.get(copy.registrationNumber)
+      if (existingCopy) {
+        await prisma.copy.update({
           where: { id: existingCopy.id },
+          data: { notes: copy.notes },
+        })
+      } else {
+        await prisma.copy.create({
+          data: {
+            registrationNumber: copy.registrationNumber,
+            notes: copy.notes,
+            materialId: id,
+            status: "available",
+          },
         })
       }
     }
 
-    // Crear o actualizar las copias
-    if (copies && Array.isArray(copies)) {
-      for (const copy of copies) {
-        const existingCopy = existingCopiesMap.get(copy.registrationNumber)
-
-        if (existingCopy) {
-          // Actualizar la copia existente
-          await prisma.copy.update({
-            where: { id: existingCopy.id },
-            data: {
-              notes: copy.notes,
-            },
-          })
-        } else {
-          // Crear una nueva copia
-          await prisma.copy.create({
-            data: {
-              registrationNumber: copy.registrationNumber,
-              notes: copy.notes,
-              materialId: id,
-              status: "available",
-            },
-          })
-        }
-      }
-    }
-
-    // Actualizar las materias
-    // Primero, eliminar todas las relaciones existentes
-    await prisma.materialToSubject.deleteMany({
-      where: { materialId: id },
-    })
-
-    // Luego, crear las nuevas relaciones
+    // Actualizar materias
+    await prisma.materialToSubject.deleteMany({ where: { materialId: id } })
     if (subjects && Array.isArray(subjects)) {
       await Promise.all(
-        subjects.map(async (subjectId: string) => {
+        subjects.map(async (subject: { id: string; name: string }) => {
+          let subjectId = subject.id
+
+          // Verificar si el subject existe
+          const existingSubject = await prisma.subject.findUnique({
+            where: { id: subjectId },
+          })
+
+          // Si no existe, crearlo
+          if (!existingSubject) {
+            const newSubject = await prisma.subject.create({
+              data: { id: subject.id, name: subject.name },
+            })
+            subjectId = newSubject.id
+          }
+
+          // Vincular el subject al material
           await prisma.materialToSubject.create({
             data: {
               materialId: id,
               subjectId,
             },
           })
-        }),
+        })
       )
     }
 
@@ -182,11 +210,12 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, context: { params: { id: string } }) {
   const session = await getServerSession(authOptions)
+  const { params } = context
   const { id } = params
 
-  if (!session || session.user.role !== "librarian") {
+  if (!session || (session.user && (session.user as any).role !== "librarian")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 

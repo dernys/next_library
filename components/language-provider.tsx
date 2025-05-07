@@ -468,7 +468,12 @@ const translations: Translations = {
     "app.changePassword":"Cambiar contraseña",
     "app.currentPassword":"Contraseña actual",
     "app.newPassword":"Nueva contraseña",
-    "app.selectType":"Seleccionar tipo de material"
+    "app.selectType":"Seleccionar tipo de material",
+    "app.addCopiesDescription":"Añadir copias de este material",
+    "app.copyNotesPlaceholder":"Añadir notas para esta copia",
+    "app.addSubjectsDescription":"Añadir materias para este material",
+    "app.subjectName":"Nombre de la materia",
+    "app.subjectNamePlaceholder":"Introduzca el nombre de la materia",
 
     
   },
@@ -763,7 +768,13 @@ const translations: Translations = {
     "app.changePassword":"Change Password",
     "app.currentPassword":"Current password",
     "app.newPassword":"New password",
-    "app.selectType":"Select material type"
+    "app.selectType":"Select material type",
+    "app.addCopiesDescription":"Add copies of this material",
+    "app.copyNotesPlaceholder":"Add notes for this copy",
+    "app.addSubjectsDescription":"Add subjects for this material",
+    "app.subjectName":"Subject Name",
+    "app.subjectNamePlaceholder":"Enter subject name",
+
 
 
 

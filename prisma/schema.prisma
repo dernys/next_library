@@ -17,19 +17,19 @@ model Role {
 }
 
 model User {
-  id                String   @id @default(cuid())
-  name              String
-  lastName          String?
-  email             String   @unique
-  password          String?
-  phone             String?
-  identityCard      String?
-  address           String?
-  roleId            String
-  role              Role     @relation(fields: [roleId], references: [id])
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  loans             Loan[]
+  id           String   @id @default(cuid())
+  name         String
+  lastName     String?
+  email        String   @unique
+  password     String?
+  phone        String?
+  identityCard String?
+  address      String?
+  roleId       String
+  role         Role     @relation(fields: [roleId], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  loans        Loan[]
 }
 
 model Category {
@@ -114,38 +114,38 @@ model Material {
 }
 
 model Copy {
-  id                 String    @id @default(cuid())
-  registrationNumber String    @unique
-  status             String    @default("available") // available, loaned, reserved, damaged
+  id                 String   @id @default(cuid())
+  registrationNumber String   @unique
+  status             String   @default("available") // available, loaned, reserved, damaged
   materialId         String
-  material           Material  @relation(fields: [materialId], references: [id], onDelete: Cascade)
-  acquisitionDate    DateTime  @default(now())
+  material           Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  acquisitionDate    DateTime @default(now())
   notes              String?
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
   loans              Loan[]
 }
 
 model Loan {
-  id         String    @id @default(cuid())
-  userId     String?
-  user       User?     @relation(fields: [userId], references: [id])
-  guestName  String?
-  guestEmail String?
-  guestPhone String?
-  guestId    String?
+  id           String    @id @default(cuid())
+  userId       String?
+  user         User?     @relation(fields: [userId], references: [id])
+  guestName    String?
+  guestEmail   String?
+  guestPhone   String?
+  guestId      String?
   guestAddress String?
-  materialId String
-  material   Material  @relation(fields: [materialId], references: [id])
-  copyId     String?
-  copy       Copy?     @relation(fields: [copyId], references: [id])
-  loanDate   DateTime  @default(now())
-  dueDate    DateTime
-  returnDate DateTime?
-  status     String    @default("requested") // requested, active, returned, overdue, rejected
-  notes      String?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  materialId   String
+  material     Material  @relation(fields: [materialId], references: [id])
+  copyId       String?
+  copy         Copy?     @relation(fields: [copyId], references: [id])
+  loanDate     DateTime  @default(now())
+  dueDate      DateTime
+  returnDate   DateTime?
+  status       String    @default("requested") // requested, active, returned, overdue, rejected
+  notes        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 }
 
 model Backup {
