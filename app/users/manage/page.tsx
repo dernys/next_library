@@ -247,7 +247,7 @@ export default function ManageUsersPage() {
         transition={{ duration: 0.5 }}
       >
         <h1 className="text-3xl font-bold">{t("app.manageUsers")}</h1>
-        <Button onClick={() => setIsAddDialogOpen(true)} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+        <Button onClick={() => setIsAddDialogOpen(true)}>
           <UserPlus className="mr-2 h-4 w-4" />
           {t("app.addUser")}
         </Button>

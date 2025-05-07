@@ -7,17 +7,15 @@ const prisma = new PrismaClient()
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions)
-  const { id } = params
+  const { id: loanId } = params
 
-  // Solo los bibliotecarios pueden aprobar préstamos
   if (!session || session.user.role !== "librarian") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
   try {
-    // Verificar si el préstamo existe
     const loan = await prisma.loan.findUnique({
-      where: { id },
+      where: { id: loanId },
       include: {
         copy: true,
       },
@@ -27,38 +25,30 @@ export async function POST(request: Request, { params }: { params: { id: string 
       return NextResponse.json({ error: "Loan not found" }, { status: 404 })
     }
 
-    // Verificar si el préstamo está en estado "requested"
     if (loan.status !== "requested") {
-      return NextResponse.json({ error: "Loan is not in requested state" }, { status: 400 })
+      return NextResponse.json(
+        { error: "Loan is not in requested state" },
+        { status: 400 }
+      )
     }
 
-    // Actualizar el préstamo a "active"
-    const updatedLoan = await prisma.$transaction(async (tx) => {
-      // Si hay una copia asociada, actualizar su estado
-      if (loan.copyId) {
-        await tx.copy.update({
-          where: { id: loan.copyId },
-          data: { status: "loaned" },
-        })
-      }
-
-      // Actualizar el préstamo
-      return await tx.loan.update({
-        where: { id },
-        data: {
-          status: "active",
-        },
-        include: {
-          material: true,
-          user: true,
-          copy: true,
-        },
-      })
+    // Aprobar el préstamo
+    const updatedLoan = await prisma.loan.update({
+      where: { id: loanId },
+      data: {
+        status: "active",
+      },
+      include: {
+        copy: true,
+      },
     })
 
     return NextResponse.json(updatedLoan)
   } catch (error) {
     console.error("Error approving loan:", error)
-    return NextResponse.json({ error: "Error approving loan" }, { status: 500 })
+    return NextResponse.json(
+      { error: "Error approving loan" },
+      { status: 500 }
+    )
   }
 }

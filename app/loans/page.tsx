@@ -189,6 +189,8 @@ export default function LoansPage() {
         description: t("app.loanReturned"),
       })
 
+      // Actualizar automáticamente los datos de la tabla
+      fetchLoans()
       router.refresh()
     } catch (error) {
       console.error("Error returning loan:", error)
@@ -216,12 +218,42 @@ export default function LoansPage() {
         description: t("app.loanRejected"),
       })
 
+      fetchLoans()
       router.refresh()
     } catch (error) {
       console.error("Error rejecting loan:", error)
       toast({
         title: t("app.error"),
         description: error instanceof Error ? error.message : t("app.errorRejectingLoan"),
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleApproveLoan = async (loanId: string) => {
+    try {
+      const response = await fetch(`/api/loans/${loanId}/approve`, {
+        method: "POST",
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || "Failed to approve loan")
+      }
+
+      toast({
+        title: t("app.success"),
+        description: t("app.loanApproved"),
+      })
+
+      // Actualizar automáticamente los datos de la tabla
+      fetchLoans()
+      router.refresh()
+    } catch (error) {
+      console.error("Error approving loan:", error)
+      toast({
+        title: t("app.error"),
+        description: error instanceof Error ? error.message : t("app.errorApprovingLoan"),
         variant: "destructive",
       })
     }
@@ -423,7 +455,7 @@ export default function LoansPage() {
                                     variant="ghost"
                                     size="sm"
                                     className="opacity-0 group-hover:opacity-100 transition-opacity"
-                                    onClick={() => handleReturnLoan(loan.id)}
+                                    onClick={() => handleApproveLoan(loan.id)}
                                   >
                                     <Check className="mr-2 h-4 w-4" />
                                     {t("app.approve")}

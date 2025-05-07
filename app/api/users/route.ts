@@ -8,13 +8,22 @@ const prisma = new PrismaClient()
 
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions)
+  const { searchParams } = new URL(request.url)
+  const query = searchParams.get("query") || ""
+
 
   if (!session || session.user.role !== "librarian") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
   try {
-    const users = await prisma.user.findMany({
+     const users = await prisma.user.findMany({
+      where: {
+        OR: [
+          { name: { contains: query, mode: "insensitive" } },
+          { email: { contains: query, mode: "insensitive" } },
+        ],
+      },
       include: {
         role: true,
       },

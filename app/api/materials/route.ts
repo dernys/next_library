@@ -9,6 +9,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const query = searchParams.get("query") || ""
   const collection = searchParams.get("collection") || ""
+  const copyStatus = searchParams.get("copyStatus") || "" // Nuevo parámetro para filtrar por estado de copia
   const page = Number.parseInt(searchParams.get("page") || "1")
   const limit = Number.parseInt(searchParams.get("limit") || "10")
   const skip = (page - 1) * limit
@@ -29,7 +30,9 @@ export async function GET(request: Request) {
         include: {
           materialType: true,
           collection: true,
-          copies: true,
+          copies: {
+            where: copyStatus ? { status: copyStatus } : {}, // Filtrar copias por estado si se proporciona
+          },
           subjects: {
             include: {
               subject: true,

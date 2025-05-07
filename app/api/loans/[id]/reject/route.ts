@@ -6,8 +6,8 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 const prisma = new PrismaClient()
 
 export async function PATCH(
-  request: Request,
-  { params }: { params: { id: string } }
+   request: Request,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getServerSession(authOptions)
 
@@ -16,7 +16,11 @@ export async function PATCH(
   }
 
   try {
-    const loanId = params.id
+    const { id: loanId } = await params // Resolver `params` con `await`
+
+    if (!loanId) {
+      return NextResponse.json({ error: "Loan ID is required" }, { status: 400 })
+    }
 
     // Get the loan with its related data
     const loan = await prisma.loan.findUnique({

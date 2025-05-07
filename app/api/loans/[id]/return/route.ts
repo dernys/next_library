@@ -1,3 +1,4 @@
+
 import { NextResponse } from "next/server"
 import { PrismaClient } from "@prisma/client"
 import { getServerSession } from "next-auth/next"
@@ -6,8 +7,8 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 const prisma = new PrismaClient()
 
 export async function PATCH(
-  request: Request,
-  { params }: { params: { id: string } }
+   request: Request,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getServerSession(authOptions)
 
@@ -16,60 +17,44 @@ export async function PATCH(
   }
 
   try {
-    const loanId = params.id
+    const { id: loanId } = await params // Resolver `params` con `await`
 
-    // Get the loan with its related data
+    if (!loanId) {
+      return NextResponse.json({ error: "Loan ID is required" }, { status: 400 })
+    }
+
+    // Obtener el préstamo con sus datos relacionados
     const loan = await prisma.loan.findUnique({
       where: { id: loanId },
       include: {
-        material: true,
         copy: true,
       },
     })
 
     if (!loan) {
-      return NextResponse.json(
-        { error: "Loan not found" },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: "Loan not found" }, { status: 404 })
     }
 
-    if (loan.status === "returned") {
+    if (loan.status !== "active") {
       return NextResponse.json(
-        { error: "Loan has already been returned" },
+        { error: "Only active loans can be returned" },
         { status: 400 }
       )
     }
 
-    // Update loan, copy status and material quantity in a transaction
+    // Actualizar el préstamo y la copia en una transacción
     const [updatedLoan] = await prisma.$transaction([
-      // Update loan status and return date
       prisma.loan.update({
         where: { id: loanId },
         data: {
           status: "returned",
           returnDate: new Date(),
         },
-        include: {
-          material: true,
-          user: true,
-          copy: true,
-        },
       }),
-      // Update copy status to available
       prisma.copy.update({
         where: { id: loan.copyId! },
         data: { status: "available" },
       }),
-      // Increase material quantity
-      prisma.material.update({
-        where: { id: loan.materialId },
-        data: {
-          quantity: {
-            increment: 1
-          }
-        }
-      })
     ])
 
     return NextResponse.json(updatedLoan)

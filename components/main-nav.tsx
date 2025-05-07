@@ -87,9 +87,9 @@ export function MainNav() {
                         <DropdownMenuItem asChild>
                           <Link href="/materials/manage">{t("app.manageMaterials")}</Link>
                         </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
+                        {/* <DropdownMenuItem asChild>
                           <Link href="/subjects/manage">{t("app.manageSubjects")}</Link>
-                        </DropdownMenuItem>
+                        </DropdownMenuItem> */}
                         <DropdownMenuItem asChild>
                           <Link href="/collections/manage">{t("app.manageCollections")}</Link>
                         </DropdownMenuItem>
