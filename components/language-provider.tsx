@@ -474,6 +474,10 @@ const translations: Translations = {
     "app.addSubjectsDescription":"Añadir materias para este material",
     "app.subjectName":"Nombre de la materia",
     "app.subjectNamePlaceholder":"Introduzca el nombre de la materia",
+    "app.selectCopy":"Seleccionar copia",
+    "app.noNotes":"No hay notas",
+    "app.noMaterialsAvailable":"No hay materiales disponibles",
+
 
     
   },
@@ -774,6 +778,9 @@ const translations: Translations = {
     "app.addSubjectsDescription":"Add subjects for this material",
     "app.subjectName":"Subject Name",
     "app.subjectNamePlaceholder":"Enter subject name",
+    "app.selectCopy":"Select copy",
+    "app.noNotes":"No notes",
+    "app.noMaterialsAvailable":"No materials available",
 
 
 

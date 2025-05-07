@@ -69,12 +69,13 @@ export default function ManageLoansPage() {
     fetchUsers()
   }, [])
 
-  async function fetchMaterials() {
+  async function fetchMaterials(copyStatus = "available") {
     try {
       setIsLoading(true)
 
       const params = new URLSearchParams()
       if (materialSearchQuery) params.append("query", materialSearchQuery)
+        params.append("copyStatus", copyStatus) // Enviar el estado requerido de las copias
 
       const response = await fetch(`/api/materials?${params.toString()}`)
       const data = await response.json()
@@ -106,6 +107,11 @@ export default function ManageLoansPage() {
       setUsers(data.users)
     } catch (error) {
       console.error("Error fetching users:", error)
+      toast({
+        title: t("app.error"),
+        description: t("app.errorFetchingUsers"),
+        variant: "destructive",
+      })
     }
   }
 
@@ -120,7 +126,7 @@ export default function ManageLoansPage() {
   }
 
   const handleCreateLoan = async () => {
-    if (!selectedMaterial || !selectedUser || !dueDate) return
+    if (!selectedMaterial || !selectedUser || !dueDate || !selectedCopy) return
 
     try {
       const response = await fetch("/api/loans", {
@@ -130,6 +136,7 @@ export default function ManageLoansPage() {
         },
         body: JSON.stringify({
           materialId: selectedMaterial.id,
+          copyId: selectedCopy.id, // Enviar el ID de la copia seleccionada
           userId: selectedUser.id,
           dueDate: dueDate.toISOString(),
         }),
@@ -197,25 +204,30 @@ export default function ManageLoansPage() {
               ) : materials.length === 0 ? (
                 <p>{t("app.noMaterialsAvailable")}</p>
               ) : (
-                materials.map((material) => (
-                  <div
-                    key={material.id}
-                    className={`p-3 rounded-lg border cursor-pointer transition-colors ${
-                      selectedMaterial?.id === material.id ? "bg-primary text-primary-foreground" : "hover:bg-muted"
-                    } ${material.quantity === 0 ? "opacity-50 cursor-not-allowed" : ""}`}
-                    onClick={() => material.quantity > 0 && handleSelectMaterial(material)}
-                  >
-                    <div className="font-medium">{material.title}</div>
-                    <div className="text-sm">{material.author}</div>
-                    <div className="text-xs mt-1">
-                      {material.quantity === 0 ? (
-                        <span className="text-red-500">{t("app.noCopiesAvailable")}</span>
-                      ) : (
-                        <span className="text-green-500">{t("app.available")}: {material.quantity}</span>
-                      )}
-                    </div>
-                  </div>
-                ))
+                materials
+                  .filter((material) => material.copies.some((copy) => copy.status === "available")) // Filtrar materiales con copias disponibles
+                  .map((material) => {
+                    const availableCopies = material.copies.filter((copy) => copy.status === "available").length // Contar copias disponibles
+                    return (
+                      <div
+                        key={material.id}
+                        className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                          selectedMaterial?.id === material.id ? "bg-primary text-primary-foreground" : "hover:bg-muted"
+                        } ${availableCopies === 0 ? "opacity-50 cursor-not-allowed" : ""}`}
+                        onClick={() => availableCopies > 0 && handleSelectMaterial(material)}
+                      >
+                        <div className="font-medium">{material.title}</div>
+                        <div className="text-sm">{material.author}</div>
+                        <div className="text-xs mt-1">
+                          {availableCopies === 0 ? (
+                            <span className="text-red-500">{t("app.noCopiesAvailable")}</span>
+                          ) : (
+                            <span className="text-green-500">{t("app.available")}: {availableCopies}</span>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })
               )}
             </div>
           </CardContent>
@@ -339,18 +351,20 @@ export default function ManageLoansPage() {
             <DialogTitle>{t("app.selectCopy")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-2 max-h-[300px] overflow-y-auto">
-            {selectedMaterial?.copies.map((copy) => (
-              <div
-                key={copy.id}
-                className={`p-3 rounded-lg border cursor-pointer transition-colors ${
-                  selectedCopy?.id === copy.id ? "bg-primary text-primary-foreground" : "hover:bg-muted"
-                }`}
-                onClick={() => handleSelectCopy(copy)}
-              >
-                <div className="font-medium">{t("app.registrationNumber")}: {copy.registrationNumber}</div>
-                <div className="text-sm">{t("app.notes")}: {copy.notes || t("app.noNotes")}</div>
-              </div>
-            ))}
+            {selectedMaterial?.copies
+              .filter((copy) => copy.status === "available") // Mostrar solo copias disponibles
+              .map((copy) => (
+                <div
+                  key={copy.id}
+                  className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                    selectedCopy?.id === copy.id ? "bg-primary text-primary-foreground" : "hover:bg-muted"
+                  }`}
+                  onClick={() => handleSelectCopy(copy)}
+                >
+                  <div className="font-medium">{t("app.registrationNumber")}: {copy.registrationNumber}</div>
+                  <div className="text-sm">{t("app.notes")}: {copy.notes || t("app.noNotes")}</div>
+                </div>
+              ))}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsCopyDialogOpen(false)}>

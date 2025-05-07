@@ -145,60 +145,44 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { materialId, userId, dueDate } = await request.json()
+    const { materialId, copyId, userId, dueDate } = await request.json()
 
-    // Validate required fields
-    if (!materialId || !dueDate) {
+    // Validar campos requeridos
+    if (!materialId || !copyId || !dueDate) {
       return NextResponse.json(
-        { error: "Material ID and due date are required" },
+        { error: "Material ID, Copy ID, and due date are required" },
         { status: 400 }
       )
     }
 
-    // Check if material exists and has available copies
-    const material = await prisma.material.findUnique({
-      where: { id: materialId },
-      include: {
-        copies: {
-          where: { status: "available" },
-        },
-      },
+    // Verificar si la copia está disponible
+    const copy = await prisma.copy.findUnique({
+      where: { id: copyId },
     })
 
-    if (!material) {
+    if (!copy) {
       return NextResponse.json(
-        { error: "Material not found" },
+        { error: "Copy not found" },
         { status: 404 }
       )
     }
 
-    if (material.quantity <= 0) {
+    if (copy.status !== "available") {
       return NextResponse.json(
-        { error: "No available copies of this material" },
+        { error: "This copy is not available for loan" },
         { status: 400 }
       )
     }
 
-    // Get the first available copy
-    const availableCopy = material.copies[0]
-
-    if (!availableCopy) {
-      return NextResponse.json(
-        { error: "No available copies of this material" },
-        { status: 400 }
-      )
-    }
-
-    // Create the loan and update material quantity in a transaction
+    // Crear el préstamo y actualizar el estado de la copia
     const [loan] = await prisma.$transaction([
-      // Create the loan
       prisma.loan.create({
         data: {
           userId: userId || null,
           materialId,
-          copyId: availableCopy.id,
+          copyId,
           dueDate: new Date(dueDate),
-          status: "requested", // Default status as per schema
+          status: "requested",
         },
         include: {
           material: true,
@@ -206,20 +190,10 @@ export async function POST(request: Request) {
           copy: true,
         },
       }),
-      // Update the copy status to loaned
       prisma.copy.update({
-        where: { id: availableCopy.id },
+        where: { id: copyId },
         data: { status: "loaned" },
       }),
-      // Decrease material quantity
-      prisma.material.update({
-        where: { id: materialId },
-        data: {
-          quantity: {
-            decrement: 1
-          }
-        }
-      })
     ])
 
     return NextResponse.json(loan)
