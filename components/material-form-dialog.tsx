@@ -71,6 +71,10 @@ type MaterialFormData = {
   collectionId: string
   language: string
   publisher: string
+  //Número de entrada
+  entry1: string
+  entry2: string
+  entry3: string
   country: string
   publicationPlace: string
   price: number
@@ -388,6 +392,21 @@ export function MaterialFormDialog({
                           <Input id="subtitle" name="subtitle" value={formData.subtitle} onChange={handleChange} />
                         </div>
                       </div>
+
+                      <div className="grid grid-cols-3 gap-4">
+  <div className="space-y-2">
+    <Label htmlFor="entry1">{t("app.entry1")}</Label>
+    <Input id="entry1" name="entry1" value={formData.entry1} onChange={handleChange} />
+  </div>
+  <div className="space-y-2">
+    <Label htmlFor="entry2">{t("app.entry2")}</Label>
+    <Input id="entry2" name="entry2" value={formData.entry2} onChange={handleChange} />
+  </div>
+  <div className="space-y-2">
+    <Label htmlFor="entry3">{t("app.entry3")}</Label>
+    <Input id="entry3" name="entry3" value={formData.entry3} onChange={handleChange} />
+  </div>
+</div>
 
                       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div className="space-y-2">

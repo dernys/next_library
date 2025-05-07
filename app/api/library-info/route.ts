@@ -1,7 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
-import prisma from "@/lib/prisma"
+import { PrismaClient } from "@prisma/client"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
+
+const prisma = new PrismaClient()
 
 // GET: Obtener información de la biblioteca
 export async function GET() {

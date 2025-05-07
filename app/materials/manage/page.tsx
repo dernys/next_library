@@ -26,6 +26,9 @@ import { Pagination } from "@/components/pagination"
 type Material = {
   id: string
   title: string
+  entry1: string
+  entry2: string
+  entry3: string
   subtitle: string | null
   author: string
   isbn: string | null
@@ -91,6 +94,9 @@ type Subject = {
 const defaultFormData = {
   id: "",
   title: "",
+  entry1:"",
+  entry2:"",
+  entry3:"",
   subtitle: "",
   author: "",
   isbn: "",
@@ -149,6 +155,9 @@ export default function ManageMaterialsPage() {
       setFormData({
         id: selectedMaterial.id,
         title: selectedMaterial.title,
+        entry1: selectedMaterial.entry1,
+        entry2: selectedMaterial.entry2,
+        entry3: selectedMaterial.entry3,
         subtitle: selectedMaterial.subtitle || "",
         author: selectedMaterial.author,
         isbn: selectedMaterial.isbn || "",
