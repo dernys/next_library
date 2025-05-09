@@ -474,6 +474,8 @@ const translations: Translations = {
     "app.addSubjectsDescription":"Añadir materias para este material",
     "app.subjectName":"Nombre de la materia",
     "app.subjectNamePlaceholder":"Introduzca el nombre de la materia",
+    "app.noResults":"Sin resultados",
+    "app.tryDifferentSearch":"Intente con otra búsqueda",
 
     
   },
@@ -774,6 +776,8 @@ const translations: Translations = {
     "app.addSubjectsDescription":"Add subjects for this material",
     "app.subjectName":"Subject Name",
     "app.subjectNamePlaceholder":"Enter subject name",
+    "app.noResults":"No results",
+    "app.tryDifferentSearch":"Try a different search",
 
 
 

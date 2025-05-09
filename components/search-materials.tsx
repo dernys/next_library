@@ -9,21 +9,21 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Search } from "lucide-react"
-import { useFetchCategories } from "@/hooks/use-fetch-categories"
+import { useFetchCollections } from "@/hooks/use-fetch-collections"
 
 export function SearchMaterials() {
   const { t } = useLanguage()
   const router = useRouter()
   const [query, setQuery] = useState("")
-  const [category, setCategory] = useState("")
-  const { categories, isLoading } = useFetchCategories()
+  const [collection, setCollection] = useState("")
+  const { collections, isLoading } = useFetchCollections()
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
 
     const params = new URLSearchParams()
     if (query) params.append("query", query)
-    if (category) params.append("category", category)
+    if (collection) params.append("collection", collection)
 
     router.push(`/materials?${params.toString()}`)
   }
@@ -42,14 +42,14 @@ export function SearchMaterials() {
             />
           </div>
           <div className="w-full md:w-64">
-            <Select value={category} onValueChange={setCategory}>
+            <Select value={collection} onValueChange={setCollection}>
               <SelectTrigger className="hover:border-primary transition-colors">
-                <SelectValue placeholder={t("app.category")} />
+                <SelectValue placeholder={t("app.collection")} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t("app.all")}</SelectItem>
                 {!isLoading &&
-                  categories.map((cat) => (
+                  collections.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id}>
                       {cat.name}
                     </SelectItem>
