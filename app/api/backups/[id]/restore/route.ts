@@ -11,10 +11,7 @@ const execAsync = promisify(exec)
 const prisma = new PrismaClient()
 
 // Actualizar la función POST para usar async/await con params
-export async function POST(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function POST(request: Request, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions)
 
   if (!session) {
@@ -28,18 +25,12 @@ export async function POST(
     })
 
     if (!backup) {
-      return NextResponse.json(
-        { error: "Backup not found" },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: "Backup not found" }, { status: 404 })
     }
 
     // Verificar si el archivo de backup existe
     if (!fs.existsSync(backup.path)) {
-      return NextResponse.json(
-        { error: "Backup file not found" },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: "Backup file not found" }, { status: 404 })
     }
 
     // Obtener la URL de la base de datos desde las variables de entorno
@@ -53,9 +44,7 @@ export async function POST(
     const tempBackupPath = path.join(process.cwd(), "backups", `pre-restore-${timestamp}.sql`)
 
     // Crear backup temporal
-    const { stderr: backupError } = await execAsync(
-      `pg_dump "${databaseUrl}" > "${tempBackupPath}"`
-    )
+    const { stderr: backupError } = await execAsync(`pg_dump "${databaseUrl}" > "${tempBackupPath}"`)
 
     if (backupError) {
       console.error("Error creating temporary backup:", backupError)
@@ -64,9 +53,7 @@ export async function POST(
 
     try {
       // Restaurar el backup
-      const { stderr: restoreError } = await execAsync(
-        `psql "${databaseUrl}" < "${backup.path}"`
-      )
+      const { stderr: restoreError } = await execAsync(`psql "${databaseUrl}" < "${backup.path}"`)
 
       if (restoreError) {
         console.error("Error restoring backup:", restoreError)
@@ -82,9 +69,7 @@ export async function POST(
       console.error("Error during restoration, attempting to restore temporary backup:", error)
 
       try {
-        const { stderr: rollbackError } = await execAsync(
-          `psql "${databaseUrl}" < "${tempBackupPath}"`
-        )
+        const { stderr: rollbackError } = await execAsync(`psql "${databaseUrl}" < "${tempBackupPath}"`)
 
         if (rollbackError) {
           console.error("Error rolling back to temporary backup:", rollbackError)
@@ -104,7 +89,7 @@ export async function POST(
     console.error("Error restoring backup:", error)
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Error restoring backup" },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }

@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useEffect, useState } from "react"
 import { useLanguage } from "@/components/language-provider"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -16,7 +18,6 @@ import {
   BarChart3,
   Activity,
   Database,
-  Plus,
   Download,
   RefreshCw,
   Upload,
@@ -615,9 +616,7 @@ export default function DashboardPage() {
                     >
                       <div>
                         <p className="font-medium">{backup.filename}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(backup.createdAt).toLocaleString()}
-                        </p>
+                        <p className="text-xs text-muted-foreground">{new Date(backup.createdAt).toLocaleString()}</p>
                         {backup.description && (
                           <p className="text-sm text-muted-foreground mt-1">{backup.description}</p>
                         )}

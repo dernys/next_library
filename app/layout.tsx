@@ -9,7 +9,8 @@ import "@/app/globals.css"
 
 export const metadata = {
   title: "Sistema de Gestión de Bibliotecas",
-  description: "Sistema integrado para la gestión de bibliotecas"
+  description: "Sistema integrado para la gestión de bibliotecas",
+    generator: 'v0.dev'
 }
 
 export default function RootLayout({
@@ -36,5 +37,4 @@ export default function RootLayout({
   )
 }
 
-
-import './globals.css'
+import "./globals.css"

@@ -21,6 +21,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from "@/hooks/use-toast"
 import { Edit, Trash, UserPlus } from "lucide-react"
 import { motion } from "framer-motion"
+import { Pagination } from "@/components/pagination"
 
 type User = {
   id: string
@@ -53,6 +54,9 @@ export default function ManageUsersPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [usersPerPage] = useState(10) // Número de usuarios por página
 
   const [formData, setFormData] = useState({
     name: "",
@@ -85,12 +89,14 @@ export default function ManageUsersPage() {
     }
   }, [selectedUser, isEditDialogOpen])
 
-  async function fetchUsers() {
+  async function fetchUsers(page = 1) {
     try {
       setIsLoading(true)
-      const response = await fetch("/api/users")
+      const response = await fetch(`/api/users?page=${page}&limit=${usersPerPage}`)
       const data = await response.json()
+
       setUsers(data.users)
+      setTotalPages(data.pagination.totalPages) // Actualizar el total de páginas desde la respuesta del backend
     } catch (error) {
       console.error("Error fetching users:", error)
       toast({
@@ -101,6 +107,11 @@ export default function ManageUsersPage() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+    fetchUsers(page) // Llamar a `fetchUsers` con la nueva página
   }
 
   async function fetchRoles() {
@@ -247,7 +258,7 @@ export default function ManageUsersPage() {
         transition={{ duration: 0.5 }}
       >
         <h1 className="text-3xl font-bold">{t("app.manageUsers")}</h1>
-        <Button onClick={() => setIsAddDialogOpen(true)} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+        <Button onClick={() => setIsAddDialogOpen(true)}>
           <UserPlus className="mr-2 h-4 w-4" />
           {t("app.addUser")}
         </Button>
@@ -339,6 +350,9 @@ export default function ManageUsersPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Agregar el componente de paginación */}
+        <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
       </motion.div>
 
       {/* Add User Dialog */}

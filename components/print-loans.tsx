@@ -2,11 +2,10 @@
 
 import { useRef } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Printer } from "lucide-react"
 import { motion } from "framer-motion"
 import { useLanguage } from "./language-provider"
-import { Loan } from "@/types/loan"
+import type { Loan } from "@/types/loan"
 
 interface PrintLoansProps {
   filteredLoans: Loan[]
@@ -18,12 +17,12 @@ export function PrintLoans({ filteredLoans }: PrintLoansProps) {
 
   const handlePrint = () => {
     if (!printRef.current) {
-      console.error('Print content ref is not available')
+      console.error("Print content ref is not available")
       return
     }
-    
+
     const content = printRef.current
-    const printWindow = window.open('', '_blank')
+    const printWindow = window.open("", "_blank")
     printWindow?.document.write(`
       <html>
         <head>
@@ -70,7 +69,7 @@ export function PrintLoans({ filteredLoans }: PrintLoansProps) {
         </body>
       </html>
     `)
-    
+
     printWindow?.document.close()
     printWindow?.focus()
     setTimeout(() => {
@@ -115,21 +114,19 @@ export function PrintLoans({ filteredLoans }: PrintLoansProps) {
   return (
     <>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-        <Button 
-          onClick={handlePrint} 
-          className="flex items-center gap-2"
-          disabled={filteredLoans.length === 0}
-        >
+        <Button onClick={handlePrint} className="flex items-center gap-2" disabled={filteredLoans.length === 0}>
           <Printer className="h-4 w-4" />
           {t("app.printAll")} ({filteredLoans.length})
         </Button>
       </motion.div>
 
-      <div style={{ display: 'none' }}>
+      <div style={{ display: "none" }}>
         <div ref={printRef} className="p-4">
           <div className="print-header">
             <h1>{t("app.loanReport")}</h1>
-            <p>{t("app.printedOn")}: {new Date().toLocaleDateString()}</p>
+            <p>
+              {t("app.printedOn")}: {new Date().toLocaleDateString()}
+            </p>
           </div>
 
           <table>
@@ -153,14 +150,16 @@ export function PrintLoans({ filteredLoans }: PrintLoansProps) {
                   <td>{formatDate(loan.loanDate)}</td>
                   <td>{formatDate(loan.dueDate)}</td>
                   <td>{t(`app.${loan.status}`)}</td>
-                  <td>{loan.copy?.registrationNumber || '-'}</td>
+                  <td>{loan.copy?.registrationNumber || "-"}</td>
                 </tr>
               ))}
             </tbody>
           </table>
 
           <div className="print-footer">
-            <p>{t("app.totalLoans")}: {filteredLoans.length}</p>
+            <p>
+              {t("app.totalLoans")}: {filteredLoans.length}
+            </p>
           </div>
         </div>
       </div>

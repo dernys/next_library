@@ -94,9 +94,9 @@ type Subject = {
 const defaultFormData = {
   id: "",
   title: "",
-  entry1:"",
-  entry2:"",
-  entry3:"",
+  entry1: "",
+  entry2: "",
+  entry3: "",
   subtitle: "",
   author: "",
   isbn: "",
@@ -573,7 +573,9 @@ export default function ManageMaterialsPage() {
                         </TableCell>
                         <TableCell>{material.author}</TableCell>
                         <TableCell>
-                          <span className="rounded-full bg-secondary px-2 py-1 text-xs">{material.collection?.name}</span>
+                          <span className="rounded-full bg-secondary px-2 py-1 text-xs">
+                            {material.collection?.name}
+                          </span>
                         </TableCell>
                         <TableCell>
                           {material.materialType ? (
