@@ -18,12 +18,9 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Badge } from "@/components/ui/badge"
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
-import { Book, Plus, Minus, Upload, RefreshCw, Copy, Tag, Search, BookPlus, Loader2 } from "lucide-react"
+import { Book, Plus, Minus, Tag, Search, BookPlus, Loader2 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 
 type MaterialType = {
@@ -144,7 +141,7 @@ export function MaterialFormDialog({
   // Validación en tiempo real
   useEffect(() => {
     const newErrors: Record<string, string> = {}
-    
+
     // Solo validar si el formulario ha sido tocado
     if (formData.title !== "") {
       if (!formData.title.trim()) {
@@ -309,7 +306,10 @@ export function MaterialFormDialog({
         const newSubjects = data.subjects
           .map((s: { name: string }) => subjects.find((sub) => sub.name.toLowerCase() === s.name.toLowerCase()))
           .filter(Boolean) as Subject[]
-        setSelectedSubjects([...selectedSubjects, ...newSubjects.filter((s) => !selectedSubjects.find((sub) => sub.id === s.id))])
+        setSelectedSubjects([
+          ...selectedSubjects,
+          ...newSubjects.filter((s) => !selectedSubjects.find((sub) => sub.id === s.id)),
+        ])
       }
 
       setIsOpenLibrarySearchOpen(false)
@@ -394,19 +394,19 @@ export function MaterialFormDialog({
                       </div>
 
                       <div className="grid grid-cols-3 gap-4">
-  <div className="space-y-2">
-    <Label htmlFor="entry1">{t("app.entry1")}</Label>
-    <Input id="entry1" name="entry1" value={formData.entry1} onChange={handleChange} />
-  </div>
-  <div className="space-y-2">
-    <Label htmlFor="entry2">{t("app.entry2")}</Label>
-    <Input id="entry2" name="entry2" value={formData.entry2} onChange={handleChange} />
-  </div>
-  <div className="space-y-2">
-    <Label htmlFor="entry3">{t("app.entry3")}</Label>
-    <Input id="entry3" name="entry3" value={formData.entry3} onChange={handleChange} />
-  </div>
-</div>
+                        <div className="space-y-2">
+                          <Label htmlFor="entry1">{t("app.entry1")}</Label>
+                          <Input id="entry1" name="entry1" value={formData.entry1} onChange={handleChange} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="entry2">{t("app.entry2")}</Label>
+                          <Input id="entry2" name="entry2" value={formData.entry2} onChange={handleChange} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="entry3">{t("app.entry3")}</Label>
+                          <Input id="entry3" name="entry3" value={formData.entry3} onChange={handleChange} />
+                        </div>
+                      </div>
 
                       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div className="space-y-2">
@@ -526,7 +526,12 @@ export function MaterialFormDialog({
                       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div className="space-y-2">
                           <Label htmlFor="editionInfo">{t("app.editionInfo")}</Label>
-                          <Input id="editionInfo" name="editionInfo" value={formData.editionInfo} onChange={handleChange} />
+                          <Input
+                            id="editionInfo"
+                            name="editionInfo"
+                            value={formData.editionInfo}
+                            onChange={handleChange}
+                          />
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="language">{t("app.language")}</Label>
@@ -574,7 +579,12 @@ export function MaterialFormDialog({
                       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div className="space-y-2">
                           <Label htmlFor="dimensions">{t("app.dimensions")}</Label>
-                          <Input id="dimensions" name="dimensions" value={formData.dimensions} onChange={handleChange} />
+                          <Input
+                            id="dimensions"
+                            name="dimensions"
+                            value={formData.dimensions}
+                            onChange={handleChange}
+                          />
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="pages">{t("app.pages")}</Label>
@@ -617,7 +627,6 @@ export function MaterialFormDialog({
                               <Input
                                 value={copy.registrationNumber}
                                 onChange={(e) => handleCopyChange(index, "registrationNumber", e.target.value)}
-                                
                               />
                             </div>
                             <div className="flex-1 space-y-2">
@@ -659,10 +668,7 @@ export function MaterialFormDialog({
                         <Button
                           type="button"
                           onClick={() =>
-                            setSelectedSubjects([
-                              ...selectedSubjects,
-                              { id: crypto.randomUUID(), name: "" },
-                            ])
+                            setSelectedSubjects([...selectedSubjects, { id: crypto.randomUUID(), name: "" }])
                           }
                           className="hover:bg-primary/90 transition-colors"
                         >
@@ -697,9 +703,7 @@ export function MaterialFormDialog({
                               type="button"
                               variant="ghost"
                               size="icon"
-                              onClick={() =>
-                                setSelectedSubjects(selectedSubjects.filter((_, i) => i !== index))
-                              }
+                              onClick={() => setSelectedSubjects(selectedSubjects.filter((_, i) => i !== index))}
                               className="hover:bg-destructive/20 transition-colors"
                             >
                               <Minus className="h-4 w-4" />
@@ -712,9 +716,7 @@ export function MaterialFormDialog({
                           <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center">
                             <Tag className="h-12 w-12 text-muted-foreground mb-4" />
                             <p className="text-lg font-medium">{t("app.noSubjects")}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {t("app.addSubjectsDescription")}
-                            </p>
+                            <p className="text-sm text-muted-foreground">{t("app.addSubjectsDescription")}</p>
                           </div>
                         )}
                       </div>
@@ -759,11 +761,7 @@ export function MaterialFormDialog({
                 onChange={(e) => setOpenLibraryQuery(e.target.value)}
               />
               <Button type="submit" disabled={isSearchingOpenLibrary}>
-                {isSearchingOpenLibrary ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Search className="h-4 w-4" />
-                )}
+                {isSearchingOpenLibrary ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
               </Button>
             </div>
 
@@ -791,13 +789,9 @@ export function MaterialFormDialog({
                     <h3 className="font-medium">{book.title}</h3>
                     {book.subtitle && <p className="text-sm text-muted-foreground">{book.subtitle}</p>}
                     {book.authors && (
-                      <p className="text-sm text-muted-foreground">
-                        {book.authors.map((a) => a.name).join(", ")}
-                      </p>
+                      <p className="text-sm text-muted-foreground">{book.authors.map((a) => a.name).join(", ")}</p>
                     )}
-                    {book.isbn_13?.[0] && (
-                      <p className="text-xs text-muted-foreground">ISBN: {book.isbn_13[0]}</p>
-                    )}
+                    {book.isbn_13?.[0] && <p className="text-xs text-muted-foreground">ISBN: {book.isbn_13[0]}</p>}
                   </div>
                 </motion.div>
               ))}

@@ -5,10 +5,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 
 const prisma = new PrismaClient()
 
-export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: Request, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions)
 
   if (!session) {
@@ -21,26 +18,17 @@ export async function GET(
     })
 
     if (!subject) {
-      return NextResponse.json(
-        { error: "Subject not found" },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: "Subject not found" }, { status: 404 })
     }
 
     return NextResponse.json(subject)
   } catch (error) {
     console.error("Error fetching subject:", error)
-    return NextResponse.json(
-      { error: "Error fetching subject" },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: "Error fetching subject" }, { status: 500 })
   }
 }
 
-export async function PUT(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function PUT(request: Request, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions)
 
   if (!session) {
@@ -51,10 +39,7 @@ export async function PUT(
     const { name, description } = await request.json()
 
     if (!name) {
-      return NextResponse.json(
-        { error: "Name is required" },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: "Name is required" }, { status: 400 })
     }
 
     // Verificar si ya existe una materia con el mismo nombre (excluyendo la actual)
@@ -71,10 +56,7 @@ export async function PUT(
     })
 
     if (existingSubject) {
-      return NextResponse.json(
-        { error: "A subject with this name already exists" },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: "A subject with this name already exists" }, { status: 400 })
     }
 
     const subject = await prisma.subject.update({
@@ -88,17 +70,11 @@ export async function PUT(
     return NextResponse.json(subject)
   } catch (error) {
     console.error("Error updating subject:", error)
-    return NextResponse.json(
-      { error: "Error updating subject" },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: "Error updating subject" }, { status: 500 })
   }
 }
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: Request, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions)
 
   if (!session) {
@@ -112,10 +88,7 @@ export async function DELETE(
     })
 
     if (materialCount > 0) {
-      return NextResponse.json(
-        { error: "Cannot delete subject that is being used by materials" },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: "Cannot delete subject that is being used by materials" }, { status: 400 })
     }
 
     await prisma.subject.delete({
@@ -125,9 +98,6 @@ export async function DELETE(
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error("Error deleting subject:", error)
-    return NextResponse.json(
-      { error: "Error deleting subject" },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: "Error deleting subject" }, { status: 500 })
   }
 }

@@ -258,106 +258,102 @@ export default function ManageUsersPage() {
         transition={{ duration: 0.5 }}
       >
         <h1 className="text-3xl font-bold">{t("app.manageUsers")}</h1>
-        <Button onClick={() => setIsAddDialogOpen(true)} >
+        <Button onClick={() => setIsAddDialogOpen(true)}>
           <UserPlus className="mr-2 h-4 w-4" />
           {t("app.addUser")}
         </Button>
       </motion.div>
 
       <motion.div
-  initial={{ opacity: 0, y: 20 }}
-  animate={{ opacity: 1, y: 0 }}
-  transition={{ duration: 0.5, delay: 0.2 }}
->
-  <Card className="hover:shadow-md transition-all duration-300">
-    <CardContent className="p-0">
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>{t("app.name")}</TableHead>
-              <TableHead>{t("app.lastName")}</TableHead>
-              <TableHead>{t("app.email")}</TableHead>
-              <TableHead>{t("app.phone")}</TableHead>
-              <TableHead>{t("app.identityCard")}</TableHead>
-              <TableHead>{t("app.role")}</TableHead>
-              <TableHead className="text-right">{t("app.actions")}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center py-8">
-                  {t("app.loading")}
-                </TableCell>
-              </TableRow>
-            ) : users.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center py-8">
-                  {t("app.noUsers")}
-                </TableCell>
-              </TableRow>
-            ) : (
-              users.map((user, index) => (
-                <motion.tr
-                  key={user.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.05 }}
-                  className="hover:bg-muted/50 transition-colors"
-                >
-                  <TableCell className="font-medium">{user.name}</TableCell>
-                  <TableCell>{user.lastName || "-"}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>{user.phone || "-"}</TableCell>
-                  <TableCell>{user.identityCard || "-"}</TableCell>
-                  <TableCell>
-                    <span className="rounded-full bg-secondary px-2 py-1 text-xs">
-                      {t(`app.${user.role.name}`)}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => {
-                          setSelectedUser(user)
-                          setIsEditDialogOpen(true)
-                        }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+      >
+        <Card className="hover:shadow-md transition-all duration-300">
+          <CardContent className="p-0">
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t("app.name")}</TableHead>
+                    <TableHead>{t("app.lastName")}</TableHead>
+                    <TableHead>{t("app.email")}</TableHead>
+                    <TableHead>{t("app.phone")}</TableHead>
+                    <TableHead>{t("app.identityCard")}</TableHead>
+                    <TableHead>{t("app.role")}</TableHead>
+                    <TableHead className="text-right">{t("app.actions")}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {isLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8">
+                        {t("app.loading")}
+                      </TableCell>
+                    </TableRow>
+                  ) : users.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8">
+                        {t("app.noUsers")}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    users.map((user, index) => (
+                      <motion.tr
+                        key={user.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: index * 0.05 }}
+                        className="hover:bg-muted/50 transition-colors"
                       >
-                        <Edit className="h-4 w-4" />
-                        <span className="sr-only">{t("app.edit")}</span>
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => {
-                          setSelectedUser(user)
-                          setIsDeleteDialogOpen(true)
-                        }}
-                      >
-                        <Trash className="h-4 w-4" />
-                        <span className="sr-only">{t("app.delete")}</span>
-                      </Button>
-                    </div>
-                  </TableCell>
-                </motion.tr>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
-    </CardContent>
-  </Card>
+                        <TableCell className="font-medium">{user.name}</TableCell>
+                        <TableCell>{user.lastName || "-"}</TableCell>
+                        <TableCell>{user.email}</TableCell>
+                        <TableCell>{user.phone || "-"}</TableCell>
+                        <TableCell>{user.identityCard || "-"}</TableCell>
+                        <TableCell>
+                          <span className="rounded-full bg-secondary px-2 py-1 text-xs">
+                            {t(`app.${user.role.name}`)}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                setSelectedUser(user)
+                                setIsEditDialogOpen(true)
+                              }}
+                            >
+                              <Edit className="h-4 w-4" />
+                              <span className="sr-only">{t("app.edit")}</span>
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                setSelectedUser(user)
+                                setIsDeleteDialogOpen(true)
+                              }}
+                            >
+                              <Trash className="h-4 w-4" />
+                              <span className="sr-only">{t("app.delete")}</span>
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </motion.tr>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
 
-  {/* Agregar el componente de paginación */}
-  <Pagination
-    currentPage={currentPage}
-    totalPages={totalPages}
-    onPageChange={handlePageChange}
-  />
-</motion.div>
+        {/* Agregar el componente de paginación */}
+        <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
+      </motion.div>
 
       {/* Add User Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>

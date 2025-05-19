@@ -110,7 +110,7 @@ export function MainNav() {
                     </DropdownMenu>
                   </>
                 )}
-                
+
                 <Button
                   asChild
                   variant={pathname.startsWith("/materials") ? "default" : "ghost"}

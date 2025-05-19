@@ -43,7 +43,7 @@ export default function LoginPage() {
         email: formData.email,
         password: formData.password,
       })
-      
+
       if (result?.error) {
         console.log(result)
         toast({

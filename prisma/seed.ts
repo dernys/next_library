@@ -71,7 +71,6 @@ async function main() {
       create: category,
     })
   }
-
 }
 
 main()

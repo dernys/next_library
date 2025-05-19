@@ -8,10 +8,7 @@ import path from "path"
 const prisma = new PrismaClient()
 
 // Actualizar la función GET para usar async/await con params
-export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: Request, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions)
 
   if (!session) {
@@ -25,18 +22,12 @@ export async function GET(
     })
 
     if (!backup) {
-      return NextResponse.json(
-        { error: "Backup not found" },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: "Backup not found" }, { status: 404 })
     }
 
     // Verificar si el archivo de backup existe
     if (!fs.existsSync(backup.path)) {
-      return NextResponse.json(
-        { error: "Backup file not found" },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: "Backup file not found" }, { status: 404 })
     }
 
     // Leer el archivo de backup
@@ -44,12 +35,9 @@ export async function GET(
 
     // Crear la respuesta con el archivo
     const response = new NextResponse(fileBuffer)
-    
+
     // Establecer los headers apropiados
-    response.headers.set(
-      "Content-Disposition",
-      `attachment; filename="${path.basename(backup.path)}"`
-    )
+    response.headers.set("Content-Disposition", `attachment; filename="${path.basename(backup.path)}"`)
     response.headers.set("Content-Type", "application/octet-stream")
     response.headers.set("Content-Length", fileBuffer.length.toString())
 
@@ -58,7 +46,7 @@ export async function GET(
     console.error("Error downloading backup:", error)
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Error downloading backup" },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }

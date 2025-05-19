@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/pagination"
 import { Skeleton } from "@/components/ui/skeleton"
 import { SearchMaterials } from "@/components/search-materials"
-import { Book, BookPlus, Eye } from "lucide-react"
+import { Book, BookPlus } from "lucide-react"
 
 type Material = {
   id: string
@@ -65,7 +65,6 @@ export default function MaterialsPage() {
   const page = Number.parseInt(searchParams.get("page") || "1")
   const collection = searchParams.get("collection") || ""
 
-
   useEffect(() => {
     async function fetchMaterials() {
       try {
@@ -73,8 +72,8 @@ export default function MaterialsPage() {
 
         const params = new URLSearchParams()
         if (query) params.append("query", query)
-           if (collection) params.append("collection", collection) // Usar colección en lugar de categoría
-   
+        if (collection) params.append("collection", collection) // Usar colección en lugar de categoría
+
         params.append("page", page.toString())
         params.append("limit", "10")
 

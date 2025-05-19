@@ -1,6 +1,6 @@
 "use client"
 
-import * as React from "react"
+import type * as React from "react"
 import { createContext, useContext, useState, useEffect } from "react"
 
 type LanguageContextType = {
@@ -371,7 +371,8 @@ const translations: Translations = {
     "app.download": "Descargar",
     "app.restore": "Restaurar",
     "app.restoring": "Restaurando...",
-    "app.confirmRestoreBackup": "¿Estás seguro de que quieres restaurar esta copia de seguridad? Se perderán todos los datos actuales.",
+    "app.confirmRestoreBackup":
+      "¿Estás seguro de que quieres restaurar esta copia de seguridad? Se perderán todos los datos actuales.",
     "app.backupRestored": "Copia de seguridad restaurada correctamente",
     "app.errorRestoringBackup": "Error al restaurar la copia de seguridad",
     "app.noBackups": "No hay copias de seguridad",
@@ -455,29 +456,27 @@ const translations: Translations = {
     "app.visualizeLibraryData": "Ver datos de la biblioteca",
     "app.noDataAvailable": "No hay datos disponibles",
     "app.createBackupDescription": "Crear una copia de seguridad de la base de datos",
-    "app.registrationSuccess":"Registro exitoso",
-    "app.registrationFailed":"Error al registrar",
-    "app.confirmLoanRequest":"Confirmar Préstamo",
-    "app.confirmLoanRequestDescription":"Confirmar Préstamo",
-    "app.confirmRequest":"Confirmar",
-    "app.loanRequestSuccess":"Préstamo confirmado exitosamente",
-    "app.loanRequestFailed":"Error al confirmar préstamo",
-    "app.userProfile":"Perfil de usuario",
-    "app.loanHistory":"Historial de préstamos",
-    "app.updateProfile":"Actualizar perfil",
-    "app.changePassword":"Cambiar contraseña",
-    "app.currentPassword":"Contraseña actual",
-    "app.newPassword":"Nueva contraseña",
-    "app.selectType":"Seleccionar tipo de material",
-    "app.addCopiesDescription":"Añadir copias de este material",
-    "app.copyNotesPlaceholder":"Añadir notas para esta copia",
-    "app.addSubjectsDescription":"Añadir materias para este material",
-    "app.subjectName":"Nombre de la materia",
-    "app.subjectNamePlaceholder":"Introduzca el nombre de la materia",
-    "app.noResults":"Sin resultados",
-    "app.tryDifferentSearch":"Intente con otra búsqueda",
-
-    
+    "app.registrationSuccess": "Registro exitoso",
+    "app.registrationFailed": "Error al registrar",
+    "app.confirmLoanRequest": "Confirmar Préstamo",
+    "app.confirmLoanRequestDescription": "Confirmar Préstamo",
+    "app.confirmRequest": "Confirmar",
+    "app.loanRequestSuccess": "Préstamo confirmado exitosamente",
+    "app.loanRequestFailed": "Error al confirmar préstamo",
+    "app.userProfile": "Perfil de usuario",
+    "app.loanHistory": "Historial de préstamos",
+    "app.updateProfile": "Actualizar perfil",
+    "app.changePassword": "Cambiar contraseña",
+    "app.currentPassword": "Contraseña actual",
+    "app.newPassword": "Nueva contraseña",
+    "app.selectType": "Seleccionar tipo de material",
+    "app.addCopiesDescription": "Añadir copias de este material",
+    "app.copyNotesPlaceholder": "Añadir notas para esta copia",
+    "app.addSubjectsDescription": "Añadir materias para este material",
+    "app.subjectName": "Nombre de la materia",
+    "app.subjectNamePlaceholder": "Introduzca el nombre de la materia",
+    "app.noResults": "Sin resultados",
+    "app.tryDifferentSearch": "Intente con otra búsqueda",
   },
   en: {
     "app.mainTitle": "Library Management System",
@@ -756,33 +755,28 @@ const translations: Translations = {
     "app.visualizeLibraryData": "Visualize library data",
     "app.noDataAvailable": "No data available",
     "app.createBackupDescription": "Create a backup of the database",
-    
-    "app.registrationFailed":"Registration Failed",
-    "app.registrationSuccess":"Registration Success",
-    "app.confirmLoanRequest":"Confirm Loan Request",
-    "app.confirmLoanRequestDescription":"Confirm Loan Request",
-    "app.confirmRequest":"Confirm Request",
-    "app.loanRequestSuccess":"Loan request confirmed successfully",
-    "app.loanRequestFailed":"Error confirming loan request",
-    "app.userProfile":"User Profile",
-    "app.loanHistory":"Loan History",
-    "app.updateProfile":"Update Profile",
-    "app.changePassword":"Change Password",
-    "app.currentPassword":"Current password",
-    "app.newPassword":"New password",
-    "app.selectType":"Select material type",
-    "app.addCopiesDescription":"Add copies of this material",
-    "app.copyNotesPlaceholder":"Add notes for this copy",
-    "app.addSubjectsDescription":"Add subjects for this material",
-    "app.subjectName":"Subject Name",
-    "app.subjectNamePlaceholder":"Enter subject name",
-    "app.noResults":"No results",
-    "app.tryDifferentSearch":"Try a different search",
 
-
-
-
-    
+    "app.registrationFailed": "Registration Failed",
+    "app.registrationSuccess": "Registration Success",
+    "app.confirmLoanRequest": "Confirm Loan Request",
+    "app.confirmLoanRequestDescription": "Confirm Loan Request",
+    "app.confirmRequest": "Confirm Request",
+    "app.loanRequestSuccess": "Loan request confirmed successfully",
+    "app.loanRequestFailed": "Error confirming loan request",
+    "app.userProfile": "User Profile",
+    "app.loanHistory": "Loan History",
+    "app.updateProfile": "Update Profile",
+    "app.changePassword": "Change Password",
+    "app.currentPassword": "Current password",
+    "app.newPassword": "New password",
+    "app.selectType": "Select material type",
+    "app.addCopiesDescription": "Add copies of this material",
+    "app.copyNotesPlaceholder": "Add notes for this copy",
+    "app.addSubjectsDescription": "Add subjects for this material",
+    "app.subjectName": "Subject Name",
+    "app.subjectNamePlaceholder": "Enter subject name",
+    "app.noResults": "No results",
+    "app.tryDifferentSearch": "Try a different search",
   },
 }
 
@@ -812,9 +806,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <LanguageContext.Provider value={{ language, setLanguage: changeLanguage, t }}>
-      {children}
-    </LanguageContext.Provider>
+    <LanguageContext.Provider value={{ language, setLanguage: changeLanguage, t }}>{children}</LanguageContext.Provider>
   )
 }
 
@@ -824,4 +816,4 @@ export function useLanguage() {
     throw new Error("useLanguage must be used within a LanguageProvider")
   }
   return context
-} 
+}

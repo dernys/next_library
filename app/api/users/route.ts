@@ -9,8 +9,8 @@ const prisma = new PrismaClient()
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions)
   const { searchParams } = new URL(request.url)
-  const page = parseInt(searchParams.get("page") || "1", 10)
-  const limit = parseInt(searchParams.get("limit") || "10", 10)
+  const page = Number.parseInt(searchParams.get("page") || "1", 10)
+  const limit = Number.parseInt(searchParams.get("limit") || "10", 10)
   const skip = (page - 1) * limit
 
   if (!session || session.user.role !== "librarian") {

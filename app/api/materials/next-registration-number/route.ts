@@ -26,7 +26,7 @@ export async function GET() {
       const lastNumber = lastCopy.registrationNumber
       const prefix = lastNumber.match(/^[A-Za-z]+/)?.[0] || ""
       const number = Number.parseInt(lastNumber.replace(prefix, ""), 10)
-      
+
       if (!isNaN(number)) {
         nextNumber = `${prefix}${(number + 1).toString().padStart(lastNumber.length - prefix.length, "0")}`
       }
@@ -35,9 +35,6 @@ export async function GET() {
     return NextResponse.json({ nextRegistrationNumber: nextNumber })
   } catch (error) {
     console.error("Error generating next registration number:", error)
-    return NextResponse.json(
-      { error: "Error generating next registration number" },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: "Error generating next registration number" }, { status: 500 })
   }
 }

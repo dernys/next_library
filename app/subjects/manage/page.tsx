@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useEffect, useState } from "react"
 import { useLanguage } from "@/components/language-provider"
 import { Button } from "@/components/ui/button"

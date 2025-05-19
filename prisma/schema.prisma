@@ -48,7 +48,7 @@ model Category {
 model Collection {
   id          String     @id @default(cuid())
   externalId  String?    @unique
-  name        String     @unique
+  name        String
   description String?
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
@@ -58,7 +58,7 @@ model Collection {
 model MaterialType {
   id          String     @id @default(cuid())
   externalId  String?    @unique
-  name        String     @unique
+  name        String
   description String?
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt

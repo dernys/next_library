@@ -108,7 +108,10 @@ export async function POST(request: Request) {
         where: { registrationNumber },
       })
       if (existingMaterial || existingCopy) {
-        return NextResponse.json({ error: "El número de registro ya existe en otro material o copia." }, { status: 400 })
+        return NextResponse.json(
+          { error: "El número de registro ya existe en otro material o copia." },
+          { status: 400 },
+        )
       }
     }
 
@@ -144,14 +147,22 @@ export async function POST(request: Request) {
     // Crear las copias: deben coincidir en cantidad con quantity
     if (copies && Array.isArray(copies)) {
       if (copies.length !== quantity) {
-        return NextResponse.json({ error: "La cantidad de copias debe coincidir con la cantidad indicada." }, { status: 400 })
+        return NextResponse.json(
+          { error: "La cantidad de copias debe coincidir con la cantidad indicada." },
+          { status: 400 },
+        )
       }
       for (const copy of copies) {
         // Validar que registrationNumber de la copia sea único en materiales y copias
-        const copyExistsInMaterial = await prisma.material.findFirst({ where: { registrationNumber: copy.registrationNumber } })
+        const copyExistsInMaterial = await prisma.material.findFirst({
+          where: { registrationNumber: copy.registrationNumber },
+        })
         const copyExistsInCopy = await prisma.copy.findFirst({ where: { registrationNumber: copy.registrationNumber } })
         if (copyExistsInMaterial || copyExistsInCopy) {
-          return NextResponse.json({ error: `El número de registro ${copy.registrationNumber} ya existe en otro material o copia.` }, { status: 400 })
+          return NextResponse.json(
+            { error: `El número de registro ${copy.registrationNumber} ya existe en otro material o copia.` },
+            { status: 400 },
+          )
         }
         await prisma.copy.create({
           data: {
@@ -192,7 +203,7 @@ export async function POST(request: Request) {
               subjectId,
             },
           })
-        })
+        }),
       )
     }
 
