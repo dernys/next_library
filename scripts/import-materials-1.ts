@@ -1,16 +1,16 @@
-import { PrismaClient } from '@prisma/client'
-import mysql, { RowDataPacket, Connection } from 'mysql2/promise'
-import dotenv from 'dotenv'
+import { PrismaClient } from "@prisma/client"
+import mysql, { type RowDataPacket, type Connection } from "mysql2/promise"
+import dotenv from "dotenv"
 
 dotenv.config()
 const prisma = new PrismaClient()
 
 // Mapeo de estados de copia
 const COPY_STATUS: Record<string, string> = {
-  AVL: 'available',
-  LOA: 'loaned',
-  RES: 'reserved',
-  DAM: 'damaged',
+  AVL: "available",
+  LOA: "loaned",
+  RES: "reserved",
+  DAM: "damaged",
 }
 
 async function syncLookups(db: Connection) {
@@ -37,7 +37,7 @@ async function syncLookups(db: Connection) {
 
 async function importMaterials(db: Connection) {
   const defaultCat = await prisma.category.findFirst()
-  if (!defaultCat) throw new Error('Debe existir al menos una categoría en Prisma')
+  if (!defaultCat) throw new Error("Debe existir al menos una categoría en Prisma")
 
   const [rows] = await db.query<RowDataPacket[]>(`
     SELECT
@@ -49,6 +49,11 @@ async function importMaterials(db: Connection) {
       call_nmbr1,
       call_nmbr2,
       call_nmbr3,
+      topic1,
+      topic2,
+      topic3,
+      topic4,
+      topic5,
       opac_flg AS opac,
       has_cover AS cover,
       material_cd AS mcd,
@@ -60,17 +65,17 @@ async function importMaterials(db: Connection) {
     const bibid = m.bibid as number
     const matId = String(bibid)
 
-    let title = (m.title as string) ?? ''
+    let title = (m.title as string) ?? ""
     const subtitle = (m.subtitle as string) ?? null
     const responsibility = (m.responsibility as string) ?? null
-    let author = (m.author as string) ?? 'Unknown'
+    let author = (m.author as string) ?? "Unknown"
     const entry1 = (m.call_nmbr1 as string) ?? null
     const entry2 = (m.call_nmbr2 as string) ?? null
     const entry3 = (m.call_nmbr3 as string) ?? null
 
     const [fields] = await db.query<RowDataPacket[]>(
       `SELECT tag, subfield_cd AS sub, field_data AS data FROM biblio_field WHERE bibid = ?`,
-      [bibid]
+      [bibid],
     )
 
     let isbn: string | null = null
@@ -88,62 +93,69 @@ async function importMaterials(db: Connection) {
     let price: number | null = null
     const subjects: string[] = []
 
+    if (m.topic1) subjects.push(m.topic1 as string)
+    if (m.topic2) subjects.push(m.topic2 as string)
+    if (m.topic3) subjects.push(m.topic3 as string)
+    if (m.topic4) subjects.push(m.topic4 as string)
+    if (m.topic5) subjects.push(m.topic5 as string)
+
     for (const f of fields) {
-      const tag = String(f.tag).padStart(3, '0')
+      const tag = String(f.tag).padStart(3, "0")
       const sub = (f.sub as string).toLowerCase()
       const data = (f.data as string).trim()
       switch (tag) {
-        case '020':
-          if (sub === 'a') isbn = data
+        case "020":
+          if (sub === "a") isbn = data
           break
-        case '245':
-          if (sub === 'a' && !title) title = data
-          if (sub === 'b' && !subtitle) title += `: ${data}`
-          if (sub === 'c' && !summary) summary = data
+        case "245":
+          if (sub === "a" && !title) title = data
+          if (sub === "b" && !subtitle) title += `: ${data}`
+          if (sub === "c" && !summary) summary = data
           break
-        case '100': case '110':
-          if (sub === 'a' && !author) author = data
+        case "100":
+        case "110":
+          if (sub === "a" && !author) author = data
           break
-        case '650':
-          if (sub === 'a') subjects.push(data)
+        case "650":
+          if (sub === "a") subjects.push(data)
           break
-        case '250':
-          if (sub === 'a') editionInfo = data
+        case "250":
+          if (sub === "a") editionInfo = data
           break
-        case '800':
-          if (sub === 'v') volume = data
+        case "800":
+          if (sub === "v") volume = data
           break
-        case '257':
-          if (sub === 'a') country = data
+        case "257":
+          if (sub === "a") country = data
           break
-        case '260':
-          if (sub === 'a') pubPlace = data
-          if (sub === 'b') publisher = data
-          if (sub === 'c') publicationDate = data
+        case "260":
+          if (sub === "a") pubPlace = data
+          if (sub === "b") publisher = data
+          if (sub === "c") publicationDate = data
           break
-        case '240':
-          if (sub === 'l') language = data
+        case "240":
+          if (sub === "l") language = data
           break
-        case '520':
-          if (sub === 'a' && !summary) summary = data
+        case "520":
+          if (sub === "a" && !summary) summary = data
           break
-        case '300':
-          if (sub === 'a') pages = parseInt(data) || null
-          if (sub === 'b') otherPhys = data
-          if (sub === 'c') dimensions = data
+        case "300":
+          if (sub === "a") pages = Number.parseInt(data) || null
+          if (sub === "b") otherPhys = data
+          if (sub === "c") dimensions = data
           break
-        case '541':
-          if (sub === 'h') price = parseFloat(data.replace(/[^0-9.]/g, '')) || null
+        case "541":
+          if (sub === "h") price = Number.parseFloat(data.replace(/[^0-9.]/g, "")) || null
           break
       }
     }
 
     const [copies] = await db.query<RowDataPacket[]>(
       `SELECT barcode_nmbr AS regNo, create_dt AS createdAt, copy_desc AS notes, status_cd FROM biblio_copy WHERE bibid = ?`,
-      [bibid]
+      [bibid],
     )
     const quantity = copies.length
-    const editionFull = [editionInfo, volume].filter(Boolean).join(' ') || null
+    const editionFull = [editionInfo, volume].filter(Boolean).join(" ") || null
 
     await prisma.material.upsert({
       where: { id: matId },
@@ -156,7 +168,7 @@ async function importMaterials(db: Connection) {
         description: summary ?? responsibility,
         quantity,
         editionInfo: editionFull,
-        isOpac: m.opac === 'Y',
+        isOpac: m.opac === "Y",
         opac: m.opac as string,
         categoryId: defaultCat.id,
         materialTypeId: String(m.mcd),
@@ -172,7 +184,7 @@ async function importMaterials(db: Connection) {
         entry1,
         entry2,
         entry3,
-        coverImage: m.cover === 'Y' ? 'true' : 'false',
+        coverImage: m.cover === "Y" ? "true" : "false",
       },
       update: {
         title,
@@ -182,7 +194,7 @@ async function importMaterials(db: Connection) {
         description: summary ?? responsibility,
         quantity,
         editionInfo: editionFull,
-        isOpac: m.opac === 'Y',
+        isOpac: m.opac === "Y",
         opac: m.opac as string,
         materialTypeId: String(m.mcd),
         collectionId: String(m.ccd),
@@ -197,8 +209,8 @@ async function importMaterials(db: Connection) {
         entry1,
         entry2,
         entry3,
-        coverImage: m.cover === 'Y' ? 'true' : 'false',
-      }
+        coverImage: m.cover === "Y" ? "true" : "false",
+      },
     })
 
     await prisma.materialToSubject.deleteMany({ where: { materialId: matId } })
@@ -207,10 +219,10 @@ async function importMaterials(db: Connection) {
       const subj = await prisma.subject.upsert({
         where: { name: trimmed },
         create: { name: trimmed, description: trimmed },
-        update: {}
+        update: {},
       })
-      await prisma.materialToSubject.create({
-        data: { materialId: matId, subjectId: subj.id }
+      const materialToSub = await prisma.materialToSubject.create({
+        data: { materialId: matId, subjectId: subj.id },
       })
     }
 
@@ -228,23 +240,23 @@ async function importMaterials(db: Connection) {
           status: COPY_STATUS[c.status_cd],
           acquisitionDate: new Date(c.createdAt as string),
           notes: c.notes || null,
-        }
+        },
       })
     }
   }
 
-  console.log('✅ Importación completa a PRODUCCIÓN.')
+  console.log("✅ Importación completa a PRODUCCIÓN.")
 }
 
 async function main() {
-  console.log('▶️ Iniciando importación PRODUCCIÓN...')
+  console.log("▶️ Iniciando importación PRODUCCIÓN...")
   const db = await mysql.createConnection(process.env.ESPABIBLIO_URL!)
   await prisma.$connect()
   try {
     await syncLookups(db)
     await importMaterials(db)
   } catch (e) {
-    console.error('❌ Importación fallida:', e)
+    console.error("❌ Importación fallida:", e)
     process.exit(1)
   } finally {
     await db.end()

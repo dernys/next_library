@@ -211,7 +211,9 @@ export default function ManageLoansPage() {
                       {material.quantity === 0 ? (
                         <span className="text-red-500">{t("app.noCopiesAvailable")}</span>
                       ) : (
-                        <span className="text-green-500">{t("app.available")}: {material.quantity}</span>
+                        <span className="text-green-500">
+                          {t("app.available")}: {material.quantity}
+                        </span>
                       )}
                     </div>
                   </div>
@@ -347,8 +349,12 @@ export default function ManageLoansPage() {
                 }`}
                 onClick={() => handleSelectCopy(copy)}
               >
-                <div className="font-medium">{t("app.registrationNumber")}: {copy.registrationNumber}</div>
-                <div className="text-sm">{t("app.notes")}: {copy.notes || t("app.noNotes")}</div>
+                <div className="font-medium">
+                  {t("app.registrationNumber")}: {copy.registrationNumber}
+                </div>
+                <div className="text-sm">
+                  {t("app.notes")}: {copy.notes || t("app.noNotes")}
+                </div>
               </div>
             ))}
           </div>

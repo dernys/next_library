@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/pagination"
 import { Skeleton } from "@/components/ui/skeleton"
 import { SearchMaterials } from "@/components/search-materials"
-import { Book, BookPlus, Eye } from "lucide-react"
+import { Book, BookPlus } from "lucide-react"
 
 type Material = {
   id: string
@@ -63,6 +63,7 @@ export default function MaterialsPage() {
   const query = searchParams.get("query") || ""
   const category = searchParams.get("category") || ""
   const page = Number.parseInt(searchParams.get("page") || "1")
+  const collection = searchParams.get("collection") || ""
 
   useEffect(() => {
     async function fetchMaterials() {
@@ -71,7 +72,8 @@ export default function MaterialsPage() {
 
         const params = new URLSearchParams()
         if (query) params.append("query", query)
-        if (category) params.append("category", category)
+        if (collection) params.append("collection", collection) // Usar colección en lugar de categoría
+
         params.append("page", page.toString())
         params.append("limit", "10")
 
@@ -88,7 +90,7 @@ export default function MaterialsPage() {
     }
 
     fetchMaterials()
-  }, [query, category, page])
+  }, [query, collection, page])
 
   return (
     <div className="container py-8">
@@ -114,12 +116,12 @@ export default function MaterialsPage() {
                 <TableRow>
                   <TableHead>{t("app.title")}</TableHead>
                   <TableHead>{t("app.author")}</TableHead>
-                  <TableHead>{t("app.category")}</TableHead>
+                  <TableHead>{t("app.collection")}</TableHead>
                   <TableHead>{t("app.type")}</TableHead>
                   <TableHead>{t("app.language")}</TableHead>
                   <TableHead>{t("app.publisher")}</TableHead>
                   <TableHead className="text-center">{t("app.quantity")}</TableHead>
-                  <TableHead className="text-right">{t("app.actions")}</TableHead>
+                  {/* <TableHead className="text-right">{t("app.actions")}</TableHead> */}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -147,9 +149,9 @@ export default function MaterialsPage() {
                       <TableCell className="text-center">
                         <Skeleton className="h-5 w-8 mx-auto" />
                       </TableCell>
-                      <TableCell className="text-right">
+                      {/* <TableCell className="text-right">
                         <Skeleton className="h-9 w-20 ml-auto" />
-                      </TableCell>
+                      </TableCell> */}
                     </TableRow>
                   ))
                 ) : materials.length === 0 ? (
@@ -192,7 +194,7 @@ export default function MaterialsPage() {
                           {material.quantity}
                         </span>
                       </TableCell>
-                      <TableCell className="text-right">
+                      {/* <TableCell className="text-right">
                         <Button
                           asChild
                           variant="ghost"
@@ -204,7 +206,7 @@ export default function MaterialsPage() {
                             {t("app.view")}
                           </Link>
                         </Button>
-                      </TableCell>
+                      </TableCell> */}
                     </TableRow>
                   ))
                 )}

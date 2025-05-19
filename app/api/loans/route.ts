@@ -136,7 +136,6 @@ export async function GET(request: Request) {
   }
 }
 
-
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions)
 
@@ -149,10 +148,7 @@ export async function POST(request: Request) {
 
     // Validate required fields
     if (!materialId || !dueDate) {
-      return NextResponse.json(
-        { error: "Material ID and due date are required" },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: "Material ID and due date are required" }, { status: 400 })
     }
 
     // Check if material exists and has available copies
@@ -166,27 +162,18 @@ export async function POST(request: Request) {
     })
 
     if (!material) {
-      return NextResponse.json(
-        { error: "Material not found" },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: "Material not found" }, { status: 404 })
     }
 
     if (material.quantity <= 0) {
-      return NextResponse.json(
-        { error: "No available copies of this material" },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: "No available copies of this material" }, { status: 400 })
     }
 
     // Get the first available copy
     const availableCopy = material.copies[0]
 
     if (!availableCopy) {
-      return NextResponse.json(
-        { error: "No available copies of this material" },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: "No available copies of this material" }, { status: 400 })
     }
 
     // Create the loan and update material quantity in a transaction
@@ -216,18 +203,15 @@ export async function POST(request: Request) {
         where: { id: materialId },
         data: {
           quantity: {
-            decrement: 1
-          }
-        }
-      })
+            decrement: 1,
+          },
+        },
+      }),
     ])
 
     return NextResponse.json(loan)
   } catch (error) {
     console.error("Error creating loan:", error)
-    return NextResponse.json(
-      { error: "Error creating loan" },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: "Error creating loan" }, { status: 500 })
   }
 }

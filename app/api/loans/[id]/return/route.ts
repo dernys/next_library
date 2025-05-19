@@ -5,10 +5,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 
 const prisma = new PrismaClient()
 
-export async function PATCH(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function PATCH(request: Request, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions)
 
   if (!session) {
@@ -28,17 +25,11 @@ export async function PATCH(
     })
 
     if (!loan) {
-      return NextResponse.json(
-        { error: "Loan not found" },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: "Loan not found" }, { status: 404 })
     }
 
     if (loan.status === "returned") {
-      return NextResponse.json(
-        { error: "Loan has already been returned" },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: "Loan has already been returned" }, { status: 400 })
     }
 
     // Update loan, copy status and material quantity in a transaction
@@ -66,18 +57,15 @@ export async function PATCH(
         where: { id: loan.materialId },
         data: {
           quantity: {
-            increment: 1
-          }
-        }
-      })
+            increment: 1,
+          },
+        },
+      }),
     ])
 
     return NextResponse.json(updatedLoan)
   } catch (error) {
     console.error("Error returning loan:", error)
-    return NextResponse.json(
-      { error: "Error returning loan" },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: "Error returning loan" }, { status: 500 })
   }
 }

@@ -1,27 +1,29 @@
-import { Button } from "@/components/ui/button";
+"use client"
+
+import { Button } from "@/components/ui/button"
 
 interface PaginationProps {
-  currentPage: number;
-  totalPages: number;
-  onPageChange: (page: number) => void;
+  currentPage: number
+  totalPages: number
+  onPageChange: (page: number) => void
 }
 
 export function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) {
-  const siblings = 1;
-  const pages: (number | string)[] = [];
-  const startPage = Math.max(1, currentPage - siblings);
-  const endPage = Math.min(totalPages, currentPage + siblings);
+  const siblings = 1
+  const pages: (number | string)[] = []
+  const startPage = Math.max(1, currentPage - siblings)
+  const endPage = Math.min(totalPages, currentPage + siblings)
 
   if (startPage > 1) {
-    pages.push(1);
-    if (startPage > 2) pages.push("...");
+    pages.push(1)
+    if (startPage > 2) pages.push("...")
   }
   for (let page = startPage; page <= endPage; page++) {
-    pages.push(page);
+    pages.push(page)
   }
   if (endPage < totalPages) {
-    if (endPage < totalPages - 1) pages.push("...");
-    pages.push(totalPages);
+    if (endPage < totalPages - 1) pages.push("...")
+    pages.push(totalPages)
   }
 
   return (
@@ -49,7 +51,7 @@ export function Pagination({ currentPage, totalPages, onPageChange }: Pagination
             >
               {p}
             </Button>
-          )
+          ),
         )}
 
         <Button
@@ -61,5 +63,5 @@ export function Pagination({ currentPage, totalPages, onPageChange }: Pagination
         </Button>
       </div>
     </div>
-  );
+  )
 }

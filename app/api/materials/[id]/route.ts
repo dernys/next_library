@@ -124,7 +124,10 @@ export async function PUT(request: Request, context: { params: { id: string } })
 
     // Copias: deben coincidir con quantity
     if (!copies || !Array.isArray(copies) || copies.length !== quantity) {
-      return NextResponse.json({ error: "La cantidad de copias debe coincidir con la cantidad indicada." }, { status: 400 })
+      return NextResponse.json(
+        { error: "La cantidad de copias debe coincidir con la cantidad indicada." },
+        { status: 400 },
+      )
     }
 
     // Validar unicidad de registrationNumber de copias
@@ -136,14 +139,19 @@ export async function PUT(request: Request, context: { params: { id: string } })
         },
       })
       if (existingCopy) {
-        return NextResponse.json({ error: `El número de registro de copia ${copy.registrationNumber} ya existe.` }, { status: 400 })
+        return NextResponse.json(
+          { error: `El número de registro de copia ${copy.registrationNumber} ya existe.` },
+          { status: 400 },
+        )
       }
     }
 
     // Obtener copias existentes
     const existingCopies = await prisma.copy.findMany({ where: { materialId: id } })
     const existingCopiesMap = new Map(existingCopies.map((copy) => [copy.registrationNumber, copy]))
-    const newRegistrationNumbers = new Set(copies.map((copy: { registrationNumber: string }) => copy.registrationNumber))
+    const newRegistrationNumbers = new Set(
+      copies.map((copy: { registrationNumber: string }) => copy.registrationNumber),
+    )
 
     // Eliminar copias que ya no existen
     for (const existingCopy of existingCopies) {
@@ -199,7 +207,7 @@ export async function PUT(request: Request, context: { params: { id: string } })
               subjectId,
             },
           })
-        })
+        }),
       )
     }
 

@@ -35,10 +35,7 @@ export async function GET(request: Request) {
     return NextResponse.json(backups)
   } catch (error) {
     console.error("Error fetching backups:", error)
-    return NextResponse.json(
-      { error: "Error fetching backups" },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: "Error fetching backups" }, { status: 500 })
   }
 }
 
@@ -81,9 +78,7 @@ export async function POST(request: Request) {
     const escapedDatabaseUrl = databaseUrl.replace(/"/g, '\\"')
 
     // Crear el respaldo usando pg_dump con mejor manejo de errores
-    const { stdout, stderr } = await execAsync(
-      `pg_dump "${escapedDatabaseUrl}" > "${backupPath}"`
-    )
+    const { stdout, stderr } = await execAsync(`pg_dump "${escapedDatabaseUrl}" > "${backupPath}"`)
 
     if (stderr) {
       console.error("Error creating backup:", stderr)
@@ -127,7 +122,7 @@ export async function POST(request: Request) {
     }
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Error creating backup" },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }

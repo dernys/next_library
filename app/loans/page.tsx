@@ -22,15 +22,11 @@ import { Input } from "@/components/ui/input"
 import { DatePicker } from "@/components/ui/date-picker"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Label } from "@/components/ui/label"
-import { PrintLoan } from "@/components/print-loan"
 import { PrintLoans } from "@/components/print-loans"
-import { Loan } from "@/types/loan"
+import type { Loan } from "@/types/loan"
 import { format } from "date-fns"
 import { toast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
-import { cn } from "@/lib/utils"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Calendar as CalendarIcon } from "lucide-react"
 
 // Types
 type PaginationData = {
@@ -149,11 +145,13 @@ export default function LoansPage() {
 
     // Filter by status
     if (filters.status && loan.status !== filters.status) return false
-    
+
     // Filter by search query
-    if (filters.query && 
-        !loan.material.title.toLowerCase().includes(filters.query.toLowerCase()) &&
-        !getBorrowerName(loan).toLowerCase().includes(filters.query.toLowerCase())) {
+    if (
+      filters.query &&
+      !loan.material.title.toLowerCase().includes(filters.query.toLowerCase()) &&
+      !getBorrowerName(loan).toLowerCase().includes(filters.query.toLowerCase())
+    ) {
       return false
     }
 
@@ -163,13 +161,13 @@ export default function LoansPage() {
       startDate.setHours(0, 0, 0, 0)
       if (loanDate < startDate) return false
     }
-    
+
     if (filters.endDate) {
       const endDate = new Date(filters.endDate)
       endDate.setHours(23, 59, 59, 999)
       if (loanDate > endDate) return false
     }
-    
+
     return true
   })
 
@@ -258,11 +256,8 @@ export default function LoansPage() {
             className="max-w-md"
           />
         </div>
-        <PrintLoans 
-          filteredLoans={filteredLoans.filter(loan => 
-            loan.status !== 'CANCELLED' && 
-            loan.status !== 'RETURNED'
-          )} 
+        <PrintLoans
+          filteredLoans={filteredLoans.filter((loan) => loan.status !== "CANCELLED" && loan.status !== "RETURNED")}
         />
         <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
           <SheetTrigger asChild>
