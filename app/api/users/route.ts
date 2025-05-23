@@ -1,95 +1,84 @@
 import { NextResponse } from "next/server"
 import { PrismaClient } from "@prisma/client"
-import { hash } from "bcrypt"
-import { getServerSession } from "next-auth/next"
-import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 
 const prisma = new PrismaClient()
 
 export async function GET(request: Request) {
-  const session = await getServerSession(authOptions)
-  const { searchParams } = new URL(request.url)
-  const page = Number.parseInt(searchParams.get("page") || "1", 10)
-  const limit = Number.parseInt(searchParams.get("limit") || "10", 10)
-  const skip = (page - 1) * limit
-
-  if (!session || session.user.role !== "librarian") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
-
   try {
+    const { searchParams } = new URL(request.url)
+    const page = Number.parseInt(searchParams.get("page") || "1")
+    const limit = Number.parseInt(searchParams.get("limit") || "10")
+    const query = searchParams.get("query")
+    const role = searchParams.get("role")
+
+    const skip = (page - 1) * limit
+
+    // Build where clause
+    const where: any = {}
+
+    if (role) {
+      where.role = {
+        name: role,
+      }
+    }
+
+    if (query) {
+      where.OR = [
+        {
+          name: {
+            contains: query,
+            mode: "insensitive",
+          },
+        },
+        {
+          lastName: {
+            contains: query,
+            mode: "insensitive",
+          },
+        },
+        {
+          email: {
+            contains: query,
+            mode: "insensitive",
+          },
+        },
+        {
+          identityCard: {
+            contains: query,
+            mode: "insensitive",
+          },
+        },
+      ]
+    }
+
     const [users, total] = await Promise.all([
       prisma.user.findMany({
+        where,
+        include: {
+          role: true,
+        },
+        orderBy: {
+          name: "asc",
+        },
         skip,
         take: limit,
-        include: { role: true },
       }),
-      prisma.user.count(),
+      prisma.user.count({ where }),
     ])
+
+    const totalPages = Math.ceil(total / limit)
 
     return NextResponse.json({
       users,
       pagination: {
-        totalPages: Math.ceil(total / limit),
-        currentPage: page,
+        total,
+        pages: totalPages,
+        page,
+        limit,
       },
     })
   } catch (error) {
     console.error("Error fetching users:", error)
-    return NextResponse.json({ error: "Error fetching users" }, { status: 500 })
-  }
-}
-
-export async function POST(request: Request) {
-  const session = await getServerSession(authOptions)
-
-  if (!session || session.user.role !== "librarian") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
-
-  try {
-    const body = await request.json()
-    const { name, lastName, email, password, roleId, phone, identityCard, address } = body
-
-    // Verificar si el correo electrónico ya está en uso
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    })
-
-    if (existingUser) {
-      return NextResponse.json({ error: "Email already in use" }, { status: 400 })
-    }
-
-    // Verificar si el rol existe
-    const role = await prisma.role.findUnique({
-      where: { id: roleId },
-    })
-
-    if (!role) {
-      return NextResponse.json({ error: "Role not found" }, { status: 400 })
-    }
-
-    // Crear el usuario
-    const hashedPassword = await hash(password, 10)
-    const user = await prisma.user.create({
-      data: {
-        name,
-        lastName,
-        email,
-        password: hashedPassword,
-        roleId,
-        phone,
-        identityCard,
-        address,
-      },
-    })
-
-    // No devolver la contraseña
-    const { password: _, ...userWithoutPassword } = user
-
-    return NextResponse.json(userWithoutPassword)
-  } catch (error) {
-    console.error("Error creating user:", error)
-    return NextResponse.json({ error: "Error creating user" }, { status: 500 })
+    return NextResponse.json({ error: "Failed to fetch users" }, { status: 500 })
   }
 }

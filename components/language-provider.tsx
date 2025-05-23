@@ -477,6 +477,8 @@ const translations: Translations = {
     "app.subjectNamePlaceholder": "Introduzca el nombre de la materia",
     "app.noResults": "Sin resultados",
     "app.tryDifferentSearch": "Intente con otra búsqueda",
+    "app.summary": "Resumen",
+    "app.copy": "Copia",
   },
   en: {
     "app.mainTitle": "Library Management System",
@@ -777,6 +779,8 @@ const translations: Translations = {
     "app.subjectNamePlaceholder": "Enter subject name",
     "app.noResults": "No results",
     "app.tryDifferentSearch": "Try a different search",
+    "app.summary": "Summary",
+    "app.copy": "Copy",
   },
 }
 

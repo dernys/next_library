@@ -78,6 +78,11 @@ export default function ProfilePage() {
     try {
       setIsLoading(true)
       const response = await fetch(`/api/users/${session?.user.id}`)
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch profile")
+      }
+
       const data = await response.json()
       setProfile(data)
     } catch (error) {
@@ -94,9 +99,18 @@ export default function ProfilePage() {
 
   async function fetchLoans() {
     try {
-      const response = await fetch("/api/loans")
+      const params = new URLSearchParams()
+      params.append("userId", session?.user.id || "")
+      params.append("limit", "50")
+
+      const response = await fetch(`/api/loans?${params.toString()}`)
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch loans")
+      }
+
       const data = await response.json()
-      setLoans(data.loans)
+      setLoans(data.loans || [])
     } catch (error) {
       console.error("Error fetching loans:", error)
     }

@@ -74,7 +74,7 @@ export default function LoansPage() {
       setIsLoading(true)
 
       const params = new URLSearchParams()
-      if (filters.status) params.append("status", filters.status)
+      if (filters.status && filters.status !== "all") params.append("status", filters.status)
       if (filters.startDate) params.append("startDate", filters.startDate.toISOString())
       if (filters.endDate) params.append("endDate", filters.endDate.toISOString())
       if (filters.query) params.append("query", filters.query)
@@ -88,6 +88,11 @@ export default function LoansPage() {
       setPagination(data.pagination)
     } catch (error) {
       console.error("Error fetching loans:", error)
+      toast({
+        title: t("app.error"),
+        description: t("app.errorFetchingLoans"),
+        variant: "destructive",
+      })
     } finally {
       setIsLoading(false)
     }
@@ -187,7 +192,7 @@ export default function LoansPage() {
         description: t("app.loanReturned"),
       })
 
-      router.refresh()
+      fetchLoans()
     } catch (error) {
       console.error("Error returning loan:", error)
       toast({
@@ -214,7 +219,7 @@ export default function LoansPage() {
         description: t("app.loanRejected"),
       })
 
-      router.refresh()
+      fetchLoans()
     } catch (error) {
       console.error("Error rejecting loan:", error)
       toast({

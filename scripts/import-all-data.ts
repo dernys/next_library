@@ -34,7 +34,7 @@ const COPY_STATUS: Record<string, string> = {
 
 // Status mappings for loans
 const LOAN_STATUS: Record<string, string> = {
-  CRT: "active", // Currently on loan (Checked out)
+  CRT: "active", // Currently on loan (Checked out) - CORREGIDO: Aseguramos que CRT se mapee a "active"
   OUT: "returned", // Returned
   RES: "requested", // Reserved
   REJ: "rejected", // Rejected
@@ -838,8 +838,14 @@ async function importLoans(db: Connection): Promise<void> {
         log(`User not found for current loan: member_${loan.mbrid}`)
       }
 
-      // Determine loan status
+      // Determine loan status - CORREGIDO: Aseguramos que CRT se mapee a "active"
       let status = LOAN_STATUS[loan.status_cd] || "returned"
+
+      // Verificación adicional para asegurar que CRT se mapee a "active"
+      if (loan.status_cd === "CRT") {
+        status = "active"
+        log(`Setting loan for biblio ${loan.bibid}, copy ${loan.copyid} as ACTIVE (CRT)`)
+      }
 
       // Check if overdue
       const dueDate = loan.due_back_dt ? new Date(loan.due_back_dt) : null
@@ -848,6 +854,7 @@ async function importLoans(db: Connection): Promise<void> {
       if (isOverdue) {
         status = "overdue"
         overdueImported++
+        log(`Setting loan for biblio ${loan.bibid}, copy ${loan.copyid} as OVERDUE (past due date)`)
       } else if (status === "active") {
         activeImported++
       } else if (status === "returned") {
