@@ -2,6 +2,7 @@ import { PrismaClient } from "@prisma/client"
 import mysql, { type RowDataPacket, type Connection } from "mysql2/promise"
 import bcrypt from "bcryptjs"
 import dotenv from "dotenv"
+import fs from "fs"
 
 dotenv.config()
 const prisma = new PrismaClient()
@@ -9,15 +10,34 @@ const prisma = new PrismaClient()
 // Configuration
 const BATCH_SIZE = Number(process.env.BATCH_SIZE) || 500
 const DEFAULT_PASSWORD = process.env.DEFAULT_PASSWORD || "changeme123"
+const LOG_FILE = "import-log.txt"
 
-// Status mappings
+// Initialize log file
+fs.writeFileSync(LOG_FILE, `Import started at ${new Date().toISOString()}\n\n`)
+
+// Helper function to log messages
+function log(message: string) {
+  console.log(message)
+  fs.appendFileSync(LOG_FILE, `${message}\n`)
+}
+
+// Status mappings for copies
 const COPY_STATUS: Record<string, string> = {
-  AVL: "available",
-  LOA: "loaned",
-  RES: "reserved",
-  DAM: "damaged",
-  LST: "lost",
-  OTH: "other",
+  AVL: "available", // Available
+  CRT: "loaned", // Currently on loan (Checked out)
+  OUT: "available", // Returned
+  RES: "reserved", // Reserved
+  DAM: "damaged", // Damaged
+  LST: "lost", // Lost
+  OTH: "other", // Other
+}
+
+// Status mappings for loans
+const LOAN_STATUS: Record<string, string> = {
+  CRT: "active", // Currently on loan (Checked out)
+  OUT: "returned", // Returned
+  RES: "requested", // Reserved
+  REJ: "rejected", // Rejected
 }
 
 // Helper functions
@@ -47,93 +67,52 @@ const generateExternalId = (prefix: string, value: string): string => {
   return `${prefix}_${Buffer.from(value).toString("base64").replace(/[+/=]/g, "")}`
 }
 
-// Add this function to check if a model has a unique constraint on a field
-async function hasUniqueConstraint(model: string, field: string): Promise<boolean> {
-  try {
-    // This is a simple check - if upsert works with this field, it has a unique constraint
-    const dummyValue = `test_${Date.now()}`
-    await prisma[model].upsert({
-      where: { [field]: dummyValue },
-      update: {},
-      create: { [field]: dummyValue },
-    })
+// Create a cache for subject lookups to improve performance
+const subjectCache = new Map<string, { id: string; externalId: string }>()
 
-    // If we get here, the field has a unique constraint
-    // Clean up the test record
-    await prisma[model].delete({ where: { [field]: dummyValue } })
-    return true
-  } catch (error) {
-    // If error contains message about unique constraint, the field doesn't have one
-    return false
-  }
-}
+// Function to find a subject by name, using the cache for performance
+async function findSubjectByName(name: string): Promise<{ id: string; externalId: string } | null> {
+  if (!name) return null
 
-// Add this helper function to safely handle upserts
-async function safeUpsert(model: string, uniqueField: string, uniqueValue: any, data: any): Promise<any> {
-  try {
-    // Try direct upsert first
-    return await prisma[model].upsert({
-      where: { [uniqueField]: uniqueValue },
-      update: data.update || {},
-      create: data.create,
-    })
-  } catch (error) {
-    // If upsert fails, fall back to findFirst + create/update
-    const existing = await prisma[model].findFirst({
-      where: { [uniqueField]: uniqueValue },
-    })
+  const trimmedName = name.trim()
+  if (!trimmedName) return null
 
-    if (existing) {
-      return await prisma[model].update({
-        where: { id: existing.id },
-        data: data.update || data.create,
-      })
-    } else {
-      return await prisma[model].create({
-        data: data.create,
-      })
-    }
-  }
-}
-
-// Add this function to handle errors gracefully
-async function importWithErrorHandling<T>(
-  entityName: string,
-  items: T[],
-  importFn: (item: T) => Promise<void>,
-): Promise<number> {
-  console.log(`Importing ${entityName}...`)
-  let successCount = 0
-  let errorCount = 0
-
-  for (const item of items) {
-    try {
-      await importFn(item)
-      successCount++
-
-      // Log progress for large imports
-      if (successCount % 100 === 0) {
-        console.log(`Imported ${successCount} ${entityName} so far...`)
-      }
-    } catch (error) {
-      errorCount++
-      console.error(`Error importing ${entityName}:`, error)
-
-      // Don't let a single error stop the entire import
-      if (errorCount > 50) {
-        console.error(`Too many errors (${errorCount}), stopping ${entityName} import`)
-        break
-      }
-    }
+  // Check cache first
+  if (subjectCache.has(trimmedName)) {
+    return subjectCache.get(trimmedName) || null
   }
 
-  console.log(`✅ Imported ${successCount} ${entityName} (with ${errorCount} errors)`)
-  return successCount
+  // Not in cache, look up in database
+  const subject = await prisma.subject.findFirst({
+    where: { name: trimmedName },
+    select: { id: true, externalId: true },
+  })
+
+  if (subject) {
+    // Add to cache for future lookups
+    subjectCache.set(trimmedName, subject)
+    return subject
+  }
+
+  // If not found, try to find by externalId
+  const externalId = generateExternalId("topic", trimmedName)
+  const subjectByExternalId = await prisma.subject.findUnique({
+    where: { externalId },
+    select: { id: true, externalId: true },
+  })
+
+  if (subjectByExternalId) {
+    // Add to cache for future lookups
+    subjectCache.set(trimmedName, subjectByExternalId)
+    return subjectByExternalId
+  }
+
+  return null
 }
 
 // Main import functions
 async function importRoles(): Promise<void> {
-  console.log("Importing roles...")
+  log("Importing roles...")
 
   const roles = [
     { name: "librarian", description: "Library administrator with full access" },
@@ -149,11 +128,11 @@ async function importRoles(): Promise<void> {
     })
   }
 
-  console.log("✅ Roles imported successfully")
+  log("✅ Roles imported successfully")
 }
 
 async function importUsers(db: Connection): Promise<void> {
-  console.log("Importing users...")
+  log("Importing users...")
 
   // Get the role IDs
   const librarianRole = await prisma.role.findUnique({ where: { name: "librarian" } })
@@ -228,11 +207,11 @@ async function importUsers(db: Connection): Promise<void> {
     })
   }
 
-  console.log(`✅ Imported ${staffRows.length} staff and ${memberRows.length} members`)
+  log(`✅ Imported ${staffRows.length} staff and ${memberRows.length} members`)
 }
 
 async function importCategories(db: Connection): Promise<void> {
-  console.log("Importing categories...")
+  log("Importing categories...")
 
   // First, import default categories
   const defaultCategories = [
@@ -323,11 +302,11 @@ async function importCategories(db: Connection): Promise<void> {
     }
   }
 
-  console.log(`✅ Imported ${defaultCategories.length + importedCount} categories`)
+  log(`✅ Imported ${defaultCategories.length + importedCount} categories`)
 }
 
 async function importCollections(db: Connection): Promise<void> {
-  console.log("Importing collections...")
+  log("Importing collections...")
 
   const [collectionRows] = await db.query<RowDataPacket[]>(`
     SELECT code, description, days_due_back
@@ -349,11 +328,11 @@ async function importCollections(db: Connection): Promise<void> {
     })
   }
 
-  console.log(`✅ Imported ${collectionRows.length} collections`)
+  log(`✅ Imported ${collectionRows.length} collections`)
 }
 
 async function importMaterialTypes(db: Connection): Promise<void> {
-  console.log("Importing material types...")
+  log("Importing material types...")
 
   const [materialTypeRows] = await db.query<RowDataPacket[]>(`
     SELECT code, description, image_file
@@ -375,11 +354,11 @@ async function importMaterialTypes(db: Connection): Promise<void> {
     })
   }
 
-  console.log(`✅ Imported ${materialTypeRows.length} material types`)
+  log(`✅ Imported ${materialTypeRows.length} material types`)
 }
 
 async function importSubjects(db: Connection): Promise<void> {
-  console.log("Importing subjects...")
+  log("Importing subjects...")
 
   // Get unique topics from biblio table
   const [topicRows] = await db.query<RowDataPacket[]>(`
@@ -430,54 +409,11 @@ async function importSubjects(db: Connection): Promise<void> {
     }
   }
 
-  console.log(`✅ Imported ${importedCount} subjects`)
-}
-
-// Create a cache for subject lookups to improve performance
-const subjectCache = new Map<string, { id: string; externalId: string }>()
-
-// Function to find a subject by name, using the cache for performance
-async function findSubjectByName(name: string): Promise<{ id: string; externalId: string } | null> {
-  if (!name) return null
-
-  const trimmedName = name.trim()
-  if (!trimmedName) return null
-
-  // Check cache first
-  if (subjectCache.has(trimmedName)) {
-    return subjectCache.get(trimmedName) || null
-  }
-
-  // Not in cache, look up in database
-  const subject = await prisma.subject.findFirst({
-    where: { name: trimmedName },
-    select: { id: true, externalId: true },
-  })
-
-  if (subject) {
-    // Add to cache for future lookups
-    subjectCache.set(trimmedName, subject)
-    return subject
-  }
-
-  // If not found, try to find by externalId
-  const externalId = generateExternalId("topic", trimmedName)
-  const subjectByExternalId = await prisma.subject.findUnique({
-    where: { externalId },
-    select: { id: true, externalId: true },
-  })
-
-  if (subjectByExternalId) {
-    // Add to cache for future lookups
-    subjectCache.set(trimmedName, subjectByExternalId)
-    return subjectByExternalId
-  }
-
-  return null
+  log(`✅ Imported ${importedCount} subjects`)
 }
 
 async function importMaterials(db: Connection): Promise<void> {
-  console.log("Importing materials...")
+  log("Importing materials...")
 
   // Get default category for materials without a category
   const defaultCategory = await prisma.category.findFirst()
@@ -529,6 +465,8 @@ async function importMaterials(db: Connection): Promise<void> {
         let pages = null
         let dimensions = null
         let price = null
+        let country = null
+        let editionInfo = null
 
         for (const field of fieldRows) {
           const tag = String(field.tag).padStart(3, "0")
@@ -538,6 +476,9 @@ async function importMaterials(db: Connection): Promise<void> {
           switch (tag) {
             case "020": // ISBN
               if (subfield === "a") isbn = cleanString(data)
+              break
+            case "250": // Edition
+              if (subfield === "a") editionInfo = cleanString(data)
               break
             case "260": // Publication info
               if (subfield === "a") publicationPlace = cleanString(data)
@@ -552,6 +493,11 @@ async function importMaterials(db: Connection): Promise<void> {
               break
             case "041": // Language
               if (subfield === "a") language = cleanString(data)
+              break
+            case "008": // Fixed-length data elements
+              if (data && data.length >= 18) {
+                country = cleanString(data.substring(15, 18))
+              }
               break
             case "365": // Price
               if (subfield === "b") price = parseFloatSafe(data)
@@ -590,6 +536,8 @@ async function importMaterials(db: Connection): Promise<void> {
           language,
           publisher,
           publicationPlace,
+          country,
+          editionInfo,
           pages,
           dimensions,
           price,
@@ -657,7 +605,7 @@ async function importMaterials(db: Connection): Promise<void> {
                 addedSubjectIds.add(newSubject.id)
               }
             } catch (error) {
-              console.error(`Error adding subject "${subjectName}" to material ${material.bibid}:`, error)
+              log(`Error adding subject "${subjectName}" to material ${material.bibid}: ${error}`)
               // Continue with next subject
             }
           }
@@ -666,17 +614,17 @@ async function importMaterials(db: Connection): Promise<void> {
         // Import copies
         await importCopiesForMaterial(db, material.bibid, createdMaterial.id)
       } catch (error) {
-        console.error(`Error importing material ${material.bibid}:`, error)
+        log(`Error importing material ${material.bibid}: ${error}`)
         // Continue with next material
       }
     }
 
     totalImported += materialRows.length
-    console.log(`Imported ${totalImported} materials so far...`)
+    log(`Imported ${totalImported} materials so far...`)
     offset += BATCH_SIZE
   }
 
-  console.log(`✅ Imported ${totalImported} materials in total`)
+  log(`✅ Imported ${totalImported} materials in total`)
 }
 
 async function importCopiesForMaterial(db: Connection, biblioId: number, materialId: string): Promise<void> {
@@ -720,82 +668,143 @@ async function importCopiesForMaterial(db: Connection, biblioId: number, materia
 }
 
 async function importLoans(db: Connection): Promise<void> {
-  console.log("Importing loans...")
+  log("Importing loans...")
 
-  // Get loan history from biblio_status_hist
-  const [loanRows] = await db.query<RowDataPacket[]>(`
+  // First, check if the biblio_status_hist table exists
+  const [histTableCheck] = await db.query<RowDataPacket[]>(`
+    SHOW TABLES LIKE 'biblio_status_hist'
+  `)
+
+  const histTableExists = histTableCheck.length > 0
+  let totalImported = 0
+  let activeImported = 0
+  let returnedImported = 0
+  let overdueImported = 0
+
+  // Import historical loans if the table exists
+  if (histTableExists) {
+    log("Importing historical loans from biblio_status_hist...")
+
+    // Get all loan history from biblio_status_hist
+    const [loanRows] = await db.query<RowDataPacket[]>(`
+      SELECT 
+        bibid, copyid, status_cd, status_begin_dt, due_back_dt, 
+        mbrid, renewal_count
+      FROM 
+        biblio_status_hist
+      ORDER BY status_begin_dt DESC
+    `)
+
+    log(`Found ${loanRows.length} historical loan records to process`)
+
+    for (const loan of loanRows) {
+      try {
+        // Skip if not a loan status
+        if (!loan.status_cd || !["CRT", "OUT"].includes(loan.status_cd)) {
+          continue
+        }
+
+        // Find the material
+        const material = await prisma.material.findUnique({
+          where: { externalId: `biblio_${loan.bibid}` },
+        })
+
+        if (!material) {
+          log(`Material not found for historical loan: biblio_${loan.bibid}`)
+          continue
+        }
+
+        // Find the copy
+        const copy = await prisma.copy.findUnique({
+          where: { externalId: `copy_${loan.bibid}_${loan.copyid}` },
+        })
+
+        if (!copy) {
+          log(`Copy not found for historical loan: copy_${loan.bibid}_${loan.copyid}`)
+        }
+
+        // Find the user
+        const user = loan.mbrid
+          ? await prisma.user.findUnique({
+              where: { externalId: `member_${loan.mbrid}` },
+            })
+          : null
+
+        if (loan.mbrid && !user) {
+          log(`User not found for historical loan: member_${loan.mbrid}`)
+        }
+
+        // Determine loan status
+        let status = LOAN_STATUS[loan.status_cd] || "returned"
+
+        // Check if overdue
+        const dueDate = loan.due_back_dt ? new Date(loan.due_back_dt) : null
+        const isOverdue = dueDate && loan.status_cd === "CRT" && new Date() > dueDate
+
+        if (isOverdue) {
+          status = "overdue"
+          overdueImported++
+        } else if (status === "active") {
+          activeImported++
+        } else if (status === "returned") {
+          returnedImported++
+        }
+
+        // Create the loan
+        const loanExternalId = `loan_${loan.bibid}_${loan.copyid}_${new Date(loan.status_begin_dt).getTime()}`
+
+        await prisma.loan.upsert({
+          where: { externalId: loanExternalId },
+          update: {
+            loanDate: new Date(loan.status_begin_dt),
+            dueDate: dueDate || new Date(loan.status_begin_dt),
+            returnDate: status === "returned" ? new Date() : null,
+            status,
+            notes: `Imported from legacy system. Renewals: ${loan.renewal_count}`,
+          },
+          create: {
+            externalId: loanExternalId,
+            userId: user?.id,
+            guestName: user ? null : "Legacy User",
+            guestEmail: user ? null : "legacy@example.com",
+            materialId: material.id,
+            copyId: copy?.id,
+            loanDate: new Date(loan.status_begin_dt),
+            dueDate: dueDate || new Date(loan.status_begin_dt),
+            returnDate: status === "returned" ? new Date() : null,
+            status,
+            notes: `Imported from legacy system. Renewals: ${loan.renewal_count}`,
+          },
+        })
+
+        totalImported++
+
+        if (totalImported % 100 === 0) {
+          log(`Imported ${totalImported} historical loans so far...`)
+        }
+      } catch (error) {
+        log(`Error importing historical loan for biblio ${loan.bibid}, copy ${loan.copyid}: ${error}`)
+      }
+    }
+  } else {
+    log("No biblio_status_hist table found, skipping historical loans")
+  }
+
+  // Import current loans from biblio_copy
+  log("Importing current loans from biblio_copy...")
+
+  // Get all copies with loan status
+  const [activeLoans] = await db.query<RowDataPacket[]>(`
     SELECT 
       bibid, copyid, status_cd, status_begin_dt, due_back_dt, 
       mbrid, renewal_count
     FROM 
-      biblio_status_hist
-    WHERE 
-      status_cd = 'LOA'
-    ORDER BY status_begin_dt DESC
-  `)
-
-  let totalImported = 0
-
-  for (const loan of loanRows) {
-    try {
-      // Find the material
-      const material = await prisma.material.findUnique({
-        where: { externalId: `biblio_${loan.bibid}` },
-      })
-
-      if (!material) continue
-
-      // Find the copy
-      const copy = await prisma.copy.findUnique({
-        where: { externalId: `copy_${loan.bibid}_${loan.copyid}` },
-      })
-
-      // Find the user
-      const user = loan.mbrid
-        ? await prisma.user.findUnique({
-            where: { externalId: `member_${loan.mbrid}` },
-          })
-        : null
-
-      // Create the loan
-      await prisma.loan.upsert({
-        where: { externalId: `loan_${loan.bibid}_${loan.copyid}_${new Date(loan.status_begin_dt).getTime()}` },
-        update: {
-          loanDate: new Date(loan.status_begin_dt),
-          dueDate: loan.due_back_dt ? new Date(loan.due_back_dt) : new Date(loan.status_begin_dt),
-          status: "returned", // Assuming historical loans are returned
-          notes: `Imported from legacy system. Renewals: ${loan.renewal_count}`,
-        },
-        create: {
-          externalId: `loan_${loan.bibid}_${loan.copyid}_${new Date(loan.status_begin_dt).getTime()}`,
-          userId: user?.id,
-          guestName: user ? null : "Legacy User",
-          materialId: material.id,
-          copyId: copy?.id,
-          loanDate: new Date(loan.status_begin_dt),
-          dueDate: loan.due_back_dt ? new Date(loan.due_back_dt) : new Date(loan.status_begin_dt),
-          returnDate: new Date(), // Assuming historical loans are returned
-          status: "returned",
-          notes: `Imported from legacy system. Renewals: ${loan.renewal_count}`,
-        },
-      })
-
-      totalImported++
-    } catch (error) {
-      console.error(`Error importing historical loan for biblio ${loan.bibid}, copy ${loan.copyid}:`, error)
-    }
-  }
-
-  // Import current active loans from biblio_copy
-  const [activeLoans] = await db.query<RowDataPacket[]>(`
-    SELECT 
-      bibid, copyid, status_begin_dt, due_back_dt, 
-      mbrid, renewal_count
-    FROM 
       biblio_copy
     WHERE 
-      status_cd = 'LOA'
+      status_cd IN ('CRT', 'OUT')
   `)
+
+  log(`Found ${activeLoans.length} current loan records to process`)
 
   for (const loan of activeLoans) {
     try {
@@ -804,12 +813,19 @@ async function importLoans(db: Connection): Promise<void> {
         where: { externalId: `biblio_${loan.bibid}` },
       })
 
-      if (!material) continue
+      if (!material) {
+        log(`Material not found for current loan: biblio_${loan.bibid}`)
+        continue
+      }
 
       // Find the copy
       const copy = await prisma.copy.findUnique({
         where: { externalId: `copy_${loan.bibid}_${loan.copyid}` },
       })
+
+      if (!copy) {
+        log(`Copy not found for current loan: copy_${loan.bibid}_${loan.copyid}`)
+      }
 
       // Find the user
       const user = loan.mbrid
@@ -818,39 +834,70 @@ async function importLoans(db: Connection): Promise<void> {
           })
         : null
 
+      if (loan.mbrid && !user) {
+        log(`User not found for current loan: member_${loan.mbrid}`)
+      }
+
+      // Determine loan status
+      let status = LOAN_STATUS[loan.status_cd] || "returned"
+
+      // Check if overdue
+      const dueDate = loan.due_back_dt ? new Date(loan.due_back_dt) : null
+      const isOverdue = dueDate && loan.status_cd === "CRT" && new Date() > dueDate
+
+      if (isOverdue) {
+        status = "overdue"
+        overdueImported++
+      } else if (status === "active") {
+        activeImported++
+      } else if (status === "returned") {
+        returnedImported++
+      }
+
       // Create the loan
+      const loanExternalId = `current_loan_${loan.bibid}_${loan.copyid}`
+
       await prisma.loan.upsert({
-        where: { externalId: `active_loan_${loan.bibid}_${loan.copyid}` },
+        where: { externalId: loanExternalId },
         update: {
           loanDate: new Date(loan.status_begin_dt),
-          dueDate: loan.due_back_dt ? new Date(loan.due_back_dt) : new Date(loan.status_begin_dt),
-          status: new Date() > new Date(loan.due_back_dt) ? "overdue" : "active",
+          dueDate: dueDate || new Date(loan.status_begin_dt),
+          returnDate: status === "returned" ? new Date() : null,
+          status,
           notes: `Imported from legacy system. Renewals: ${loan.renewal_count}`,
         },
         create: {
-          externalId: `active_loan_${loan.bibid}_${loan.copyid}`,
+          externalId: loanExternalId,
           userId: user?.id,
           guestName: user ? null : "Legacy User",
+          guestEmail: user ? null : "legacy@example.com",
           materialId: material.id,
           copyId: copy?.id,
           loanDate: new Date(loan.status_begin_dt),
-          dueDate: loan.due_back_dt ? new Date(loan.due_back_dt) : new Date(loan.status_begin_dt),
-          status: new Date() > new Date(loan.due_back_dt) ? "overdue" : "active",
+          dueDate: dueDate || new Date(loan.status_begin_dt),
+          returnDate: status === "returned" ? new Date() : null,
+          status,
           notes: `Imported from legacy system. Renewals: ${loan.renewal_count}`,
         },
       })
 
       totalImported++
+
+      if (totalImported % 100 === 0) {
+        log(`Imported ${totalImported} loans so far...`)
+      }
     } catch (error) {
-      console.error(`Error importing active loan for biblio ${loan.bibid}, copy ${loan.copyid}:`, error)
+      log(`Error importing current loan for biblio ${loan.bibid}, copy ${loan.copyid}: ${error}`)
     }
   }
 
-  console.log(`✅ Imported ${totalImported} loans`)
+  log(
+    `✅ Imported ${totalImported} loans in total (${activeImported} active, ${returnedImported} returned, ${overdueImported} overdue)`,
+  )
 }
 
 async function importLibraryInfo(db: Connection): Promise<void> {
-  console.log("Importing library information...")
+  log("Importing library information...")
 
   const [settingsRows] = await db.query<RowDataPacket[]>(`
     SELECT 
@@ -900,7 +947,7 @@ async function importLibraryInfo(db: Connection): Promise<void> {
     })
   }
 
-  console.log("✅ Library information imported")
+  log("✅ Library information imported")
 }
 
 // Helper functions to get IDs
@@ -918,9 +965,46 @@ async function getCollectionId(externalId: string): Promise<string | null> {
   return collection?.id || null
 }
 
+// Function to verify imports
+async function verifyImports(): Promise<void> {
+  log("\n--- Import Verification ---")
+
+  const userCount = await prisma.user.count()
+  log(`Users: ${userCount}`)
+
+  const materialCount = await prisma.material.count()
+  log(`Materials: ${materialCount}`)
+
+  const copyCount = await prisma.copy.count()
+  log(`Copies: ${copyCount}`)
+
+  const subjectCount = await prisma.subject.count()
+  log(`Subjects: ${subjectCount}`)
+
+  const loanCount = await prisma.loan.count()
+  log(`Loans: ${loanCount}`)
+
+  const activeLoans = await prisma.loan.count({
+    where: { status: "active" },
+  })
+  log(`Active Loans: ${activeLoans}`)
+
+  const returnedLoans = await prisma.loan.count({
+    where: { status: "returned" },
+  })
+  log(`Returned Loans: ${returnedLoans}`)
+
+  const overdueLoans = await prisma.loan.count({
+    where: { status: "overdue" },
+  })
+  log(`Overdue Loans: ${overdueLoans}`)
+
+  log("--- End Verification ---\n")
+}
+
 // Main function
 async function main() {
-  console.log("Starting comprehensive data import...")
+  log("Starting comprehensive data import...")
   let db: Connection | null = null
 
   try {
@@ -938,84 +1022,87 @@ async function main() {
     // Each function now has better error handling
     try {
       await importRoles()
-      console.log("Roles import completed")
+      log("Roles import completed")
     } catch (error) {
-      console.error("Error during roles import:", error)
+      log(`Error during roles import: ${error}`)
     }
 
     try {
       await importUsers(db)
-      console.log("Users import completed")
+      log("Users import completed")
     } catch (error) {
-      console.error("Error during users import:", error)
+      log(`Error during users import: ${error}`)
     }
 
     try {
       await importCategories(db)
-      console.log("Categories import completed")
+      log("Categories import completed")
     } catch (error) {
-      console.error("Error during categories import:", error)
+      log(`Error during categories import: ${error}`)
     }
 
     try {
       await importCollections(db)
-      console.log("Collections import completed")
+      log("Collections import completed")
     } catch (error) {
-      console.error("Error during collections import:", error)
+      log(`Error during collections import: ${error}`)
     }
 
     try {
       await importMaterialTypes(db)
-      console.log("Material types import completed")
+      log("Material types import completed")
     } catch (error) {
-      console.error("Error during material types import:", error)
+      log(`Error during material types import: ${error}`)
     }
 
     try {
       await importSubjects(db)
-      console.log("Subjects import completed")
+      log("Subjects import completed")
     } catch (error) {
-      console.error("Error during subjects import:", error)
+      log(`Error during subjects import: ${error}`)
     }
 
     try {
       await importMaterials(db)
-      console.log("Materials import completed")
+      log("Materials import completed")
     } catch (error) {
-      console.error("Error during materials import:", error)
+      log(`Error during materials import: ${error}`)
     }
 
     try {
       await importLoans(db)
-      console.log("Loans import completed")
+      log("Loans import completed")
     } catch (error) {
-      console.error("Error during loans import:", error)
+      log(`Error during loans import: ${error}`)
     }
 
     try {
       await importLibraryInfo(db)
-      console.log("Library info import completed")
+      log("Library info import completed")
     } catch (error) {
-      console.error("Error during library info import:", error)
+      log(`Error during library info import: ${error}`)
     }
 
-    console.log("✅ Import completed successfully!")
+    // Verify imports
+    await verifyImports()
+
+    log("✅ Import completed successfully!")
   } catch (error) {
-    console.error("❌ Error during import setup:", error)
+    log(`❌ Error during import setup: ${error}`)
   } finally {
     // Ensure connections are closed even if there are errors
     if (db) {
       try {
         await db.end()
       } catch (error) {
-        console.error("Error closing database connection:", error)
+        log(`Error closing database connection: ${error}`)
       }
     }
 
     try {
       await prisma.$disconnect()
     } catch (error) {
-      console.error("Error disconnecting from Prisma:", error)
+      log(`Error disconnecting from Prisma: ${error}`)
     }
   }
 }
